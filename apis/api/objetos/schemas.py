@@ -6,8 +6,8 @@ class TipoObjetoSchema(Schema):
     descripcion = fields.String(required=False)
     volumen_estimado = fields.Float(required=True)
     peso_estimado = fields.Float(required=True)
-    es_fragil = fields.Boolean(required=False, load_default=False)
-    necesita_embalaje = fields.Boolean(required=False, load_default=False)
+    es_fragil = fields.Boolean(required=False, missing=False)
+    necesita_embalaje = fields.Boolean(required=False, missing=False)
     imagen_url = fields.Url(required=False)
 
 class AddObjetoASolicitudSchema(Schema):

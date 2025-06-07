@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, session
-from api.auth.services import register_user, login_user
+from api.auth.services import register_or_update_user, login_user
 from api.auth.schemas import RegisterSchema, LoginSchema
 from marshmallow import ValidationError
 from utils.quickstart import subir_a_dropbox
@@ -17,14 +17,14 @@ def register():
             payload["foto_perfil_url"] = id_file  # o la ruta final
         else:
             payload["foto_perfil_url"] = 'https://www.dropbox.com/scl/fi/b4ttqjb0f6on9v4dxixwq/satoru-gojo-de-jujutsu-kaisen_3840x2160_xtrafondos.com.jpg?rlkey=j9xq97kkqcxdsojldqxnvbeha&dl=0'
+        print(payload)
         data = schema.load(payload)
+        print(data)
 
     except ValidationError as err:
         return jsonify({"errors": err.messages}), 400
 
-    result = register_user(data)
-    session["usuario"] = result
-    print(result)
+    result = register_or_update_user(data)
     if "error" in result:
         return jsonify({"msg": result["error"]}), 400
     return jsonify(result), 201
@@ -39,11 +39,10 @@ def login():
         return jsonify({"errors": err.messages}), 400
 
     result = login_user(data)
+    print(result)
     if "error" in result:
         return jsonify({"msg": result["error"]}), 401
     result.pop("contrasena_hash", None)
-    session["usuario"] = result["usuario"]
-    print(result)
     return jsonify(result), 200
 
 @auth_bp.route("/logout", methods=["POST"])

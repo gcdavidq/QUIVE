@@ -14,8 +14,11 @@ class Config:
     DB_NAME = os.getenv("DB_NAME", "quive")
 
     SESSION_COOKIE_HTTPONLY=True
-    SESSION_COOKIE_SAMESITE='Lax'
-    SESSION_COOKIE_SECURE=True  # Cambia a True si usas HTTPS
+    SESSION_COOKIE_SAMESITE='None'
+    SESSION_COOKIE_SECURE = False
+
+    PERMANENT_SESSION_LIFETIME = timedelta(days=7)
+    SESSION_PERMANENT = True
 
 
 # Instancia global de configuración

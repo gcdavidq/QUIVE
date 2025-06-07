@@ -1,10 +1,11 @@
+// src/components/Registerutils/UbicacionPeru.jsx
+
 import React, { useState } from "react";
+import AddressForm from "./AddressForm";
+import AddressMap from "./AddressMap";
 import useUbicacionDesdeExcel from "./distrito";
 
-// Opciones para “Tipo de vía”
-const tiposVia = ["Avenida", "Calle", "Jirón", "Pasaje"];
-
-// SVG inline de pin (color rojo suave)
+// SVG inline de pin (color rojo suave) para el botón
 const PinIcon = ({ size = 16, color = "#d9534f", style = {} }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -23,240 +24,253 @@ const PinIcon = ({ size = 16, color = "#d9534f", style = {} }) => (
   </svg>
 );
 
-const styles = {
-  container: {
-    backgroundColor: "#ffffff",
-    border: "1px solid #e0e0e0",
-    borderRadius: "8px",
-    boxShadow: "0 1px 4px rgba(0, 0, 0, 0.1)",
-    padding: "1rem 1.5rem",
-    maxWidth: "600px",
-    margin: "1rem auto",
-    fontFamily: "Arial, sans-serif",
-  },
-  toggleButton: {
+// Estilos para el overlay (modal)
+const overlayStyles = {
+  modalBackdrop: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    zIndex: 50,
+    width: "100vw",
+    height: "100vh",
+    backgroundColor: "rgba(0,0,0,0.5)",
     display: "flex",
+    justifyContent: "center",
     alignItems: "center",
-    width: "100%",
-    backgroundColor: "#f9f9f9",
-    border: "1px solid #ccc",
-    borderRadius: "8px",
-    padding: "10px 14px",
-    fontSize: "14px",
-    fontWeight: "500",
-    color: "#333",
-    cursor: "pointer",
-    outline: "none",
   },
-  toggleText: {
-    marginLeft: "8px",
-  },
-  row: {
-    display: "flex",
-    gap: "1rem",
-    marginTop: "1rem",
-    flexWrap: "wrap",
-  },
-  field: {
-    flex: 1,
-    minWidth: "150px",
-    display: "flex",
-    flexDirection: "column",
-  },
-  label: {
-    fontSize: "13px",
-    fontWeight: "600",
-    marginBottom: "6px",
-    color: "#555",
-  },
-  select: {
-    padding: "10px",
-    borderRadius: "6px",
-    border: "1px solid #ccc",
-    fontSize: "14px",
-    color: "#333",
+  modalContent: {
     backgroundColor: "#fff",
-    outline: "none",
-  },
-  input: {
-    padding: "10px",
-    borderRadius: "6px",
-    border: "1px solid #ccc",
-    fontSize: "14px",
-    color: "#333",
-    backgroundColor: "#fff",
-    outline: "none",
-    boxSizing: "border-box",
+    padding: "1.5rem",
+    borderRadius: "12px",
+    width: "95%",
+    maxWidth: "750px",
+    maxHeight: "90vh",
+    overflowY: "auto",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+    position: "relative",
   },
 };
 
+const sinonimosTipoVia = {
+  Avenida: ["Avenida", "Av.", "Av"],
+  Calle: ["Calle", "Cll", "C."],
+  Jirón: ["Jirón", "Jr.", "Jr"],
+  Pasaje: ["Pasaje", "Pje.", "Pje"]
+};
+
+function obtenerSinonimos(tipoVia) {
+  return sinonimosTipoVia[tipoVia] || [tipoVia];
+}
+
 const UbicacionPeru = ({ direccion, setUbicacion }) => {
-  const datosUbicacion = useUbicacionDesdeExcel();
+  const datosUbicacion = useUbicacionDesdeExcel() || {};
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [resultados, setResultados] = useState([]);
+  const [positionSeleccionada, setPositionSeleccionada] = useState(null);
+  const [haBuscado, setHaBuscado] = useState(false);
 
-  const departamentos = Object.keys(datosUbicacion);
-  const provincias = direccion.departamento
-    ? Object.keys(datosUbicacion[direccion.departamento])
-    : [];
-  const distritos =
-    direccion.departamento && direccion.provincia
-      ? datosUbicacion[direccion.departamento][direccion.provincia]
-      : [];
+  // Construye el string de búsqueda para Nominatim
+  const construirQuery = ({ incluyeNumero, tipoViaAlternativo }) => {
+    const partes = [];
 
-  // Genera el texto resumido para el botón
-  const resumenUbicacion = [
-    direccion.departamento,
-    direccion.provincia,
-    direccion.distrito,
-    direccion.tipoVia && direccion.nombreVia
-      ? `${direccion.tipoVia} ${direccion.nombreVia}`
-      : "",
-    direccion.numero ? `Nº ${direccion.numero}` : "",
-  ]
-    .filter(Boolean)
-    .join(" / ") || "Selecciona tu ubicación";
+    if (incluyeNumero && direccion.numero) {
+      partes.push(`${direccion.numero} ${direccion.nombreVia}`);
+    } else if (direccion.nombreVia) {
+      partes.push(`${tipoViaAlternativo} ${direccion.nombreVia}`);
+    } else {
+      partes.push(tipoViaAlternativo);
+    }
+
+    if (direccion.distrito) partes.push(direccion.distrito);
+    if (direccion.provincia) partes.push(direccion.provincia);
+    if (direccion.departamento) partes.push(direccion.departamento);
+    partes.push("Peru");
+
+    return partes.filter(Boolean).join(", ");
+  };
+
+
+  // Llamada a Nominatim en 3 pasos según lógica
+  const buscarEnMapa = async () => {
+    setHaBuscado(true);
+    setResultados([]);
+    setPositionSeleccionada(null);
+
+    const sinonimos = obtenerSinonimos(direccion.tipoVia);
+    let resultadosAcumulados = [];
+
+    for (const tipoVia of sinonimos) {
+      // 1) Buscar con número
+      const queryConNumero = construirQuery({ incluyeNumero: true, tipoViaAlternativo: tipoVia });
+      let url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(queryConNumero)}`;
+      let resp = await fetch(url, { headers: { "User-Agent": "QUIVE-App" } });
+      let data = await resp.json();
+      if (data?.length) {
+        resultadosAcumulados = [...resultadosAcumulados, ...data];
+      }
+
+      // 2) Buscar sin número (nombre de vía)
+      const querySinNumero = construirQuery({ incluyeNumero: false, tipoViaAlternativo: tipoVia });
+      url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=10&q=${encodeURIComponent(querySinNumero)}`;
+      resp = await fetch(url, { headers: { "User-Agent": "QUIVE-App" } });
+      data = await resp.json();
+      if (data?.length) {
+        resultadosAcumulados = [...resultadosAcumulados, ...data];
+      }
+    }
+
+    // Eliminar duplicados por lat/lon
+    const keySet = new Set();
+    const filtrados = resultadosAcumulados.filter(item => {
+      const key = `${item.lat}-${item.lon}`;
+      if (keySet.has(key)) return false;
+      keySet.add(key);
+      return true;
+    });
+
+    setResultados(filtrados);
+  };
+
+
+  // Cuando el usuario selecciona un marcador en el mapa…
+  const onMarkerClick = (objeto) => {
+    const address = objeto.address || {};
+    const lat = objeto.lat;
+    const lon = objeto.lon;
+
+    let numeroEncontrado = address.house_number || "";
+    if (!numeroEncontrado) {
+      const nombreVia = direccion.nombreVia?.trim();
+      const regexViaConNumero = new RegExp(`${nombreVia}\\s+(\\d{1,5})`, "i");
+      const matchNum = objeto.display_name.match(regexViaConNumero);
+      numeroEncontrado = matchNum ? matchNum[1] : "";
+    }
+
+    const viaCompleta = address.road || "";
+    let tipoViaNuevo = "";
+    let nombreViaNuevo = "";
+    if (viaCompleta) {
+      const partesVia = viaCompleta.split(" ");
+      tipoViaNuevo = partesVia[0];
+      nombreViaNuevo = partesVia.slice(1).join(" ");
+    }
+
+    setUbicacion({
+      ...direccion,
+      tipoVia: tipoViaNuevo,
+      nombreVia: nombreViaNuevo,
+      numero: numeroEncontrado,
+      lat: parseFloat(lat),
+      lng: parseFloat(lon),
+    });
+
+    setPositionSeleccionada([parseFloat(lat), parseFloat(lon)]);
+  };
+
+  // ✅ Nuevo: cuando el usuario hace clic libre en el mapa
+  const onManualSelect = async ([lat, lon]) => {
+    setPositionSeleccionada([lat, lon]);
+    setResultados([]);
+
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`;
+      const resp = await fetch(url, { headers: { "User-Agent": "QUIVE-App" } });
+      const data = await resp.json();
+
+      const address = data?.address || {};
+      const departamento = address.state || "";
+      const provincia =
+        address.county || address.region || address.state_district || "";
+      const distrito =
+        address.city_district || address.suburb || address.city || "";
+
+      const viaCompleta = address.road || "";
+      const numero = address.house_number || "";
+
+      let tipoVia = "";
+      let nombreVia = "";
+      if (viaCompleta) {
+        const partesVia = viaCompleta.split(" ");
+        tipoVia = partesVia[0];
+        nombreVia = partesVia.slice(1).join(" ");
+      }
+
+      setUbicacion({
+        ...direccion,
+        departamento,
+        provincia,
+        distrito,
+        tipoVia,
+        nombreVia,
+        numero,
+        lat,
+        lng: lon,
+      });
+    } catch (error) {
+      console.error("Error al hacer reverse geocoding:", error);
+    }
+  };
+
+  const resumenUbicacion = `${direccion.tipoVia} ${direccion.nombreVia} ${direccion.numero}, ${direccion.distrito}, ${direccion.provincia}, ${direccion.departamento}, Peru`
 
   return (
-    <div style={styles.container}>
-      {/* Botón para mostrar/ocultar el formulario */}
+    <div>
+      {/* Botón que abre el modal */}
       <button
         type="button"
-        style={styles.toggleButton}
-        onClick={() => setMostrarFormulario((prev) => !prev)}
+        onClick={() => setMostrarFormulario(true)}
+        className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-white flex items-center justify-start text-sm text-gray-800"
       >
         <PinIcon />
-        <span style={styles.toggleText}>📍 {resumenUbicacion}</span>
+        <span className="ml-2">📍 {resumenUbicacion}</span>
       </button>
 
-      {/* Formulario (solo si mostrarFormulario === true) */}
+      {/* Modal superpuesto */}
       {mostrarFormulario && (
-        <>
-          {/* Primera fila: Departamento y Provincia */}
-          <div style={styles.row}>
-            {/* Departamento */}
-            <div style={styles.field}>
-              <label style={styles.label}>Departamento:</label>
-              <select
-                style={styles.select}
-                value={direccion.departamento}
-                onChange={(e) =>
-                  setUbicacion({
-                    ...direccion,
-                    departamento: e.target.value,
-                    provincia: "",
-                    distrito: "",
-                  })
-                }
-              >
-                <option value="">-- Selecciona --</option>
-                {departamentos.map((dep) => (
-                  <option key={dep} value={dep}>
-                    {dep}
-                  </option>
-                ))}
-              </select>
-            </div>
+        <div style={overlayStyles.modalBackdrop}>
+          <div style={overlayStyles.modalContent}>
+            {/* Botón de cerrar */}
+            <button
+              style={{
+                position: "absolute",
+                top: "8px",
+                right: "12px",
+                fontSize: "20px",
+                cursor: "pointer",
+                background: "transparent",
+                border: "none",
+                color: "#555",
+              }}
+              onClick={() => setMostrarFormulario(false)}
+            >
+              ✕
+            </button>
 
-            {/* Provincia */}
-            <div style={styles.field}>
-              <label style={styles.label}>Provincia:</label>
-              <select
-                style={styles.select}
-                value={direccion.provincia}
-                onChange={(e) =>
-                  setUbicacion({
-                    ...direccion,
-                    provincia: e.target.value,
-                    distrito: "",
-                  })
-                }
-                disabled={!direccion.departamento}
-              >
-                <option value="">-- Selecciona --</option>
-                {provincias.map((prov) => (
-                  <option key={prov} value={prov}>
-                    {prov}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* 1) Formulario de campos: Departamento, Provincia, Distrito, etc. */}
+            <AddressForm
+              datosUbicacion={datosUbicacion}
+              direccion={direccion}
+              setUbicacion={setUbicacion}
+              onBuscar={buscarEnMapa}
+            />
+
+            {/* 2) Mapa con resultados, coordenadas y mensaje situacional */}
+            <AddressMap
+              resultados={resultados}
+              positionSeleccionada={positionSeleccionada}
+              onMarkerClick={onMarkerClick}
+              onManualSelect={onManualSelect}
+              haBuscado={haBuscado}
+            />
+            {direccion.lat && direccion.lng && (
+              <div style={{ marginTop: "0.5rem", fontSize: "0.9rem", color: "#374151", textAlign: "left" }}>
+                Coordenadas seleccionadas:<br />
+                <strong>Lat:</strong> {direccion.lat.toFixed(6)}&nbsp;&nbsp;
+                <strong>Lng:</strong> {direccion.lng.toFixed(6)}
+              </div>
+            )}
           </div>
-
-          {/* Segunda fila: Distrito (ancho completo) */}
-          <div style={styles.row}>
-            <div style={{ ...styles.field, flex: "1 1 100%" }}>
-              <label style={styles.label}>Distrito:</label>
-              <select
-                style={styles.select}
-                value={direccion.distrito}
-                onChange={(e) =>
-                  setUbicacion({ ...direccion, distrito: e.target.value })
-                }
-                disabled={!direccion.provincia}
-              >
-                <option value="">-- Selecciona --</option>
-                {distritos.map((dist) => (
-                  <option key={dist} value={dist}>
-                    {dist}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Tercera fila: Tipo de vía y Nombre de la vía */}
-          <div style={styles.row}>
-            {/* Tipo de vía */}
-            <div style={styles.field}>
-              <label style={styles.label}>Tipo de vía:</label>
-              <select
-                style={styles.select}
-                value={direccion.tipoVia}
-                onChange={(e) =>
-                  setUbicacion({ ...direccion, tipoVia: e.target.value })
-                }
-              >
-                <option value="">-- Selecciona --</option>
-                {tiposVia.map((via) => (
-                  <option key={via} value={via}>
-                    {via}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Nombre de la vía */}
-            <div style={styles.field}>
-              <label style={styles.label}>Nombre de la vía:</label>
-              <input
-                type="text"
-                style={styles.input}
-                value={direccion.nombreVia}
-                onChange={(e) =>
-                  setUbicacion({ ...direccion, nombreVia: e.target.value })
-                }
-                placeholder="Ej. Primavera"
-              />
-            </div>
-          </div>
-
-          {/* Cuarta fila: Número (ancho completo) */}
-          <div style={styles.row}>
-            <div style={{ ...styles.field, flex: "1 1 100%" }}>
-              <label style={styles.label}>Número:</label>
-              <input
-                type="number"
-                style={styles.input}
-                min="1"
-                value={direccion.numero}
-                onChange={(e) =>
-                  setUbicacion({ ...direccion, numero: e.target.value })
-                }
-                placeholder="Ej. 123"
-              />
-            </div>
-          </div>
-        </>
+        </div>
       )}
     </div>
   );

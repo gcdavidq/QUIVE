@@ -3,9 +3,11 @@ from api.transportistas.services import (
     upload_or_update_my_documentos,
     get_documentos_by_id,
     change_verification_status,
-    list_transportistas_verified
+    list_transportistas_verified,
+    create_or_update_tarifa,
+    get_tarifa_by_transportista
 )
-from api.transportistas.schemas import DocumentosSchema, VerificacionSchema
+from api.transportistas.schemas import DocumentosSchema, VerificacionSchema, TarifaSchema
 from utils.quickstart import subir_a_dropbox
 from marshmallow import ValidationError
 import concurrent.futures
@@ -71,4 +73,25 @@ def get_transportistas():
     }
     # En este ejemplo ignoramos los filtros y devolvemos todos los verificados
     resultado = list_transportistas_verified(filtros)
+    return jsonify(resultado), 200
+
+@transportistas_bp.route("/me/tarifa", methods=["POST"])
+def post_or_update_tarifa():
+    payload = request.get_json()
+    print(payload)
+    schema = TarifaSchema()
+    try:
+        data = schema.load(payload)
+    except ValidationError as err:
+        return jsonify({"errors": err.messages}), 400
+
+    resultado = create_or_update_tarifa(data)
+    return jsonify(resultado), 201
+
+
+@transportistas_bp.route("/<int:id_usuario>/tarifa", methods=["GET"])
+def get_tarifa_by_id(id_usuario):
+    resultado = get_tarifa_by_transportista(id_usuario)
+    if not resultado:
+        return jsonify({"msg": "No hay tarifa registrada para este transportista"}), 404
     return jsonify(resultado), 200

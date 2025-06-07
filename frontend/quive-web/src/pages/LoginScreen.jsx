@@ -71,9 +71,6 @@ const validateForm = () => {
 
       // Si login es exitoso:
       const usuario = data.usuario;
-      const token = data.access_token;
-      usuario['token'] = token
-
       setUserData(usuario);
 
       setIsLoading(false);

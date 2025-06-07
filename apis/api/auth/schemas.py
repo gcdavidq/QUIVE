@@ -1,6 +1,7 @@
 from marshmallow import Schema, fields, validate, validates_schema, ValidationError
 
 class RegisterSchema(Schema):
+    id_usuario = fields.String(required=False)
     nombre_completo = fields.String(required=True, validate=validate.Length(min=3))
     email = fields.Email(required=True)
     telefono = fields.String(required=True, validate=validate.Regexp(r"^\+?[0-9\-\s]+$"))

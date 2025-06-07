@@ -5,18 +5,6 @@ import pymysql
 
 # Nota: para el cálculo de tarifa necesitarías utilidades en utils/geo.py.
 # Aquí haremos un cálculo de tarifa ficticio (p. ej. 10 unidades por objeto).
-
-def list_my_solicitudes():
-    usuario = session.get("usuario")
-    user_id = usuario["id_usuario"]
-    conn = get_db()
-    cursor = conn.cursor()
-    sql = """
-        SELECT * FROM Solicitudes WHERE id_cliente=%s
-    """
-    cursor.execute(sql, (user_id,))
-    return cursor.fetchall()
-
 def get_solicitud_by_id(id_solicitud: int):
     conn = get_db()
     cursor = conn.cursor()

@@ -9,7 +9,7 @@ import Configuracion from './Perfilopcions/Configuracion';
 import AyudaSoporte from './Perfilopcions/AyudaSoporte';
 
 
-const PerfilTab = ({ userData, onNavigate, setActiveTab, setUserData}) => {
+const PerfilTab = ({ userData, onNavigate, setUserData}) => {
   const navigate = useNavigate();
 
   return (
@@ -86,7 +86,7 @@ const PerfilTab = ({ userData, onNavigate, setActiveTab, setUserData}) => {
           }
         />
 
-        <Route path="editar" element={<EditarPerfilTab userData={userData} />} />
+        <Route path="editar" element={<EditarPerfilTab userData={userData} setUserData={setUserData}/>} />
         <Route path="direcciones" element={<MisDirecciones />} />
         <Route path="pagos" element={<MetodosPago />} />
         <Route path="historial" element={<HistorialMudanzas />} />

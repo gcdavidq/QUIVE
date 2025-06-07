@@ -1,6 +1,5 @@
 from flask import Blueprint, request, jsonify
 from api.solicitudes.services import (
-    list_my_solicitudes,
     get_solicitud_by_id,
     create_solcitud,
     update_solicitud,
@@ -11,11 +10,6 @@ from api.solicitudes.schemas import CrearSolicitudSchema, ActualizarSolicitudSch
 from marshmallow import ValidationError
 
 solicitudes_bp = Blueprint("solicitudes_bp", __name__)
-
-@solicitudes_bp.route("/me", methods=["GET"])
-def get_me_solicitudes():
-    sols = list_my_solicitudes()
-    return jsonify(sols), 200
 
 @solicitudes_bp.route("/<int:id_solicitud>", methods=["GET"])
 def get_by_id_solicitud(id_solicitud):

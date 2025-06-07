@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, session
 from config import config
 from db import close_db
 import os
@@ -7,7 +7,7 @@ from flask_cors import CORS
 def create_app():
     app = Flask(__name__)
     app.config.from_object(config)
-    CORS(app, supports_credentials=True, origins=["http://localhost:3000"])
+    CORS(app, supports_credentials=True, origins=["http://localhost:3000", "http://127.0.0.1:3000"])
     app.secret_key = '08f90b23a5d1616bf319bc298105da20'
 
     # Registrar callback para cerrar la BD al terminar cada request
@@ -15,7 +15,6 @@ def create_app():
 
     # IMPORTAR y REGISTRAR TODOS LOS BLUEPRINTS
     from api.auth.routes import auth_bp
-    from api.users.routes import users_bp
     from api.transportistas.routes import transportistas_bp
     from api.vehiculos.routes import vehiculos_bp
     from api.objetos.routes import objetos_bp
@@ -28,7 +27,6 @@ def create_app():
     from api.notificaciones.routes import notificaciones_bp
 
     app.register_blueprint(auth_bp, url_prefix="/auth")
-    app.register_blueprint(users_bp, url_prefix="/users")
     app.register_blueprint(transportistas_bp, url_prefix="/transportistas")
     app.register_blueprint(vehiculos_bp, url_prefix="/vehiculos")
     app.register_blueprint(objetos_bp, url_prefix="/objetos")

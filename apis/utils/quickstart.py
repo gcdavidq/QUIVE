@@ -3,9 +3,28 @@ from dropbox.files import WriteMode
 from dropbox.sharing import CreateSharedLinkWithSettingsError
 import dropbox
 from typing import BinaryIO
+import requests
+
+
+def get_access_token(refresh_token, app_key, app_secret):
+    data = {
+        'grant_type': 'refresh_token',
+        'refresh_token': refresh_token,
+    }
+
+    response = requests.post(
+        "https://api.dropboxapi.com/oauth2/token",
+        data=data,
+        auth=(app_key, app_secret)
+    )
+
+    if response.ok:
+        return response.json()['access_token']
+    else:
+        raise Exception("Error obteniendo access token: " + response.text)
 
 def subir_a_dropbox(file: BinaryIO, nombre_destino: str):
-    TOKEN = 'sl.u.AFzyqqxOBYC_VeJLHRi4GLZe-53RF-pz_TBGs4vTC0wfyUWy-7KhNySZJqLwHqfONPfYxjulIluO09YpGtCrOAFuwprkCRNvksVNrYbIA2IJY8JIJA9WXCSUMCpuWqCKn60oa70s34tb8Mq89vSwyeoAXh3Ehx3BHtDToAJmGauUYG_tJHNG8axErvr3pZCMKn7WMAWmEd6sDpOy-VUtNjCtZpnT4bd9ysu1AqKjuxylzny1Wx7CzikqPMsmvsHeZVjhNtGbTvoTyskZMXyl5o55ND7ficYaSmx8J0a8zAXIqUJmTX_mPNh9KEg4AWuEI-an5kOpM_AMRdQhvy3a6zBS-3BI0ctogoY7K_wsWCFKqwI_JzQmWt3KWyw6JBRGxq-zxs9UMlkaYTtOzLBrDZGHaa7EfVG0uTFqBs-ASf3G8K0QyOcXfBmYJ3OcqtGuPLHzwImnUWZWbwBRgxZ9qN_GmzQPIBZYteYruIz3r8-eafj1DdFpauZX8PZdLATtpXOigx4elgVjtqiBie1DwiiB8E8B5U9toA0lt3ZivHNgbH8T2ToOYUW_N9X0jyDbbx2OyyeJErf3kEcQM8LcZKO-PG_vpjQLQ8tMernrzlYwjkoJi6mwiw7XePBNfB_D3LYJ5ZClRLs2HCes0lGKPQJvBrMO-7poQ7qwLCTL_4e8HXHganen0Vq1n7GUzdZlKBYQvhGYe8rxjiIrMVaYMwY3kEP_Z_C5PN6fo9mTMOSx1j2xyna6wM1iDo-ZygVBWdFAOYJXyuP9o4vQH9aMp0aOU70N-Jtb6APrGFlwiMFmWVTfbQ9M-8ZmF27jYYWU5kstV67qhDmiXdy-1FF8a0Ny7ShOUHEflAs6ih5Qgm2Wrq-RD-n6lDIu2uFWRYnQAw5gDXD_SS2P8RVrG6rq8z0P8-LNgHdvIbUE73W29XlkL1HzbDRdNh5EGMXwS1khD8TJTphp41_r2lFNf6bJJF0wz2ClDv84iDmtPMq8A-HGcQAeiNqMhc0ja1tjl_sdvao4Ex5sRn2t3vEH4hLTe02kJ-1YeG8vz1ylBKB67p-W2B0nDt70Bs2g0V1sc9VfO1SVajV5FDUIzG-A1_vSoq9HewefFg5u1LXzkHwkAZWOciT0QtZmrshHu4Hr9Z6Swti4Rdr3Vb7w8Wrby1D7QDuyg-1Q-gNJVoIKHGPgUqeqsjZmV5N_Mdi0uE2-YGWN2qxVNyRntOAkzRqo_mRFCFZrxu5dW5JVn4AGTRYy8P9WAqOJuDk4PQVAUM4T9xm3k-GV5uK140UOGaBAbtMSfS-kfgRZIoPJPAlb3eQosLf5RYMQKM_ILF9tULTAFX0GGtw2zHCmHxYNyejN4C8wGXcizhbB162aij_gs_Jksv_j0YVK1YObBezXPqTvtOtqQV_6mtCc7PNFDKFBxWj9_WiJFVy-El98AZlu7lli5XZRFA'
+    TOKEN = get_access_token(refresh_token='UToFxa2itbkAAAAAAAAAATyp6OE1TLirLtNomCTAPf41iz3WJpKF1Ota4x5fp6K4', app_key='sk2ijo2e9u12dbk', app_secret='rnm0outftw8l3wh')
     dbx = dropbox.Dropbox(TOKEN)
     """
     Sube un archivo a Dropbox.

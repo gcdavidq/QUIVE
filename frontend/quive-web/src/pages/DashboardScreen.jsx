@@ -67,7 +67,6 @@ const DashboardScreen = ({ userData, onNavigate, userType, setUserData}) => {
                 userData={userData} 
                 onNavigate={onNavigate}
                 setUserData={setUserData}
-                setActiveTab={handleTabChange}// esto navega en el dashboard general
               />
             }
           />

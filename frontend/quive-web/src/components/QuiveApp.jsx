@@ -6,13 +6,14 @@ import {
   Navigate,
   useNavigate,
 } from 'react-router-dom';
-
+import PublicRoute from './ResetRoute';
 import LandingScreen from '../pages/LandingScreen';
 import RegisterScreen from '../pages/RegisterScreen';
 import LoginScreen from '../pages/LoginScreen';
 import RegistroExitosoScreen from '../pages/RegistroExitosoScreen';
 import DashboardScreen from '../pages/DashboardScreen';
 import DashboardScreenTransportistas from '../pages/DashboardScreenTransportista';
+
 import PrivateRoute from './PrivateRoute';
 
 const AppRoutes = () => {
@@ -34,20 +35,32 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<LandingScreen onNavigate={navigate} />} />
+      <Route path="/" element={
+        <PublicRoute userData={userData}>
+          <LandingScreen onNavigate={navigate} />
+        </PublicRoute>
+      } 
+      />
       <Route
         path="/register"
         element={
-          <RegisterScreen
-            onNavigate={navigate}
-            userType={userType}
-            setUserType={setUserType}
-          />
+          <PublicRoute userData={userData}>
+            <RegisterScreen
+              onNavigate={navigate}
+              userType={userType}
+              setUserType={setUserType}
+            />
+          </PublicRoute>
         }
       />
       <Route
         path="/login"
-        element={<LoginScreen onNavigate={navigate} setUserData={setUserData} />}
+        element={<PublicRoute userData={userData}>
+          <LoginScreen 
+            onNavigate={navigate} 
+            setUserData={setUserData} />
+          </PublicRoute>
+          }
       />
       <Route
         path="/registroExitoso"
@@ -68,6 +81,7 @@ const AppRoutes = () => {
               ) : (
                 <DashboardScreen
                   userData={userData}
+                  setUserData={setUserData}
                   onNavigate={navigate}
                   userType={userType}
                 />

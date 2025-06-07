@@ -3,6 +3,8 @@ import axios from 'axios';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import UbicacionPeru from "./Registerutils/address";
 import SubidaDocumentos from './Registerutils/documentos';
+import TarifasForm from './Registerutils/tarifas';
+
 
 const RegisterScreen = ({onNavigate, userType, setUserType}) => {
     console.log('setUserType:', setUserType); 
@@ -18,6 +20,13 @@ const RegisterScreen = ({onNavigate, userType, setUserType}) => {
       licencia_conducir: null,
       tarjeta_propiedad: null,
       certificado_itv: null,
+    });
+    const [tarifas, setTarifas] = useState({
+      precio_por_m3: '',
+      precio_por_kg: '',
+      precio_por_km: '',
+      recargo_fragil: '',
+      recargo_embalaje: ''
     });
     const [tiposVehiculo, setTiposVehiculo] = useState([]);
     const [formData, setFormData] = useState({
@@ -96,7 +105,9 @@ const RegisterScreen = ({onNavigate, userType, setUserType}) => {
       distrito,
       tipoVia,
       nombreVia,
-      numero
+      numero,
+      lat,
+      lng
     } = direccion ;
     const formPayload = new FormData();
     formPayload.append("nombre_completo", formData.nombre);
@@ -105,7 +116,7 @@ const RegisterScreen = ({onNavigate, userType, setUserType}) => {
     formPayload.append("dni", parseInt(formData.dni));
     formPayload.append("contrasena", formData.password);
     formPayload.append("tipo_usuario", userType);
-    const ubicacion = `${tipoVia} ${nombreVia} ${numero}, ${distrito}, ${provincia}, ${departamento}, Peru`;
+    const ubicacion = `${tipoVia} ${nombreVia} ${numero}, ${distrito}, ${provincia}, ${departamento}, Peru; ${lat}, ${lng}`;
     formPayload.append("ubicacion", ubicacion);
     formPayload.append("foto_perfil_url", fotoPerfil || "null");
 
@@ -133,16 +144,10 @@ const RegisterScreen = ({onNavigate, userType, setUserType}) => {
         const documentosPayload = new FormData();
         const vehiculoPayload = new FormData();
         
-        vehiculoPayload.append("id_usuario", data.id_usuario);
-        vehiculoPayload.append("placa", formData.placa);
-        vehiculoPayload.append("id_tipo_vehiculo", formData.tipoVehiculo);
-
-        documentosPayload.append("licencia_conducir_url", documentos.licencia_conducir);
-        documentosPayload.append("tarjeta_propiedad_url", documentos.tarjeta_propiedad);
-        documentosPayload.append("certificado_itv_url", documentos.certificado_itv);
-        documentosPayload.append("id_usuario", data.id_usuario);
-
         try {
+          vehiculoPayload.append("id_usuario", data.id_usuario);
+          vehiculoPayload.append("placa", formData.placa);
+          vehiculoPayload.append("id_tipo_vehiculo", formData.tipoVehiculo);
           const VehResponse = await fetch("http://127.0.0.1:5000/vehiculos/me", {
             method: "POST",
             credentials: "include",
@@ -161,6 +166,11 @@ const RegisterScreen = ({onNavigate, userType, setUserType}) => {
         }
 
         try {
+          documentosPayload.append("licencia_conducir_url", documentos.licencia_conducir);
+          documentosPayload.append("tarjeta_propiedad_url", documentos.tarjeta_propiedad);
+          documentosPayload.append("certificado_itv_url", documentos.certificado_itv);
+          documentosPayload.append("id_usuario", data.id_usuario);
+          
           const docResponse = await fetch("http://127.0.0.1:5000/transportistas/me/documentos", {
             method: "POST",
             credentials: "include",
@@ -176,6 +186,36 @@ const RegisterScreen = ({onNavigate, userType, setUserType}) => {
         } catch (error) {
           console.error("Error al conectar con la API de documentos:", error);
           alert("Registro exitoso, pero ocurrió un error al enviar los documentos.");
+        }
+
+        try {
+          const tarifaPayload = {
+            id_transportista: data.id_usuario,
+            precio_por_m3: parseFloat(tarifas.precio_por_m3),
+            precio_por_kg: parseFloat(tarifas.precio_por_kg),
+            precio_por_km: parseFloat(tarifas.precio_por_km),
+            recargo_fragil: parseFloat(tarifas.recargo_fragil) || 0.0,
+            recargo_embalaje: parseFloat(tarifas.recargo_embalaje) || 0.0,
+          };
+
+          const tarifaResponse = await fetch("http://127.0.0.1:5000/transportistas/me/tarifa", {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(tarifaPayload),
+          });
+
+          const tarifaData = await tarifaResponse.json();
+
+          if (!tarifaResponse.ok) {
+            console.error("Error al registrar tarifas:", tarifaData);
+            alert("Registro exitoso, pero ocurrió un error al registrar las tarifas.");
+          }
+        } catch (error) {
+          console.error("Error al conectar con la API de tarifas:", error);
+          alert("Registro exitoso, pero ocurrió un error al enviar los datos de tarifas.");
         }
       }
       onNavigate('registroExitoso');
@@ -331,7 +371,7 @@ const RegisterScreen = ({onNavigate, userType, setUserType}) => {
 
             <div className="relative">
               <input
-                type={showPassword ? 'text' : 'password'}
+                type='text'
                 name="password"
                 placeholder="Contraseña"
                 value={formData.password}
@@ -424,6 +464,9 @@ const RegisterScreen = ({onNavigate, userType, setUserType}) => {
                 <div>
                     <SubidaDocumentos documentos={documentos} setDocumentos={setDocumentos} />
                     {/* Puedes agregar botones para enviar o validar documentos aquí */}
+                </div>
+                <div>
+                    <TarifasForm tarifas={tarifas} setTarifas={setTarifas} />
                 </div>
               </>
             )}

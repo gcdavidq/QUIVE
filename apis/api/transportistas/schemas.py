@@ -9,3 +9,11 @@ class DocumentosSchema(Schema):
 class VerificacionSchema(Schema):
     estado_verificacion = fields.String(required=True, validate=validate.OneOf(["pendiente", "verificado", "rechazado"]))
     mensaje = fields.String(required=False)
+
+class TarifaSchema(Schema):
+    id_transportista = fields.Integer(required=True)
+    precio_por_m3 = fields.Float(required=True)
+    precio_por_kg = fields.Float(required=True)
+    precio_por_km = fields.Float(required=True)
+    recargo_fragil = fields.Float(missing=0.0)
+    recargo_embalaje = fields.Float(missing=0.0)

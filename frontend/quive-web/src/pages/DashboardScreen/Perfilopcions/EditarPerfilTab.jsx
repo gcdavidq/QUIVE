@@ -1,181 +1,252 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect  } from 'react';
+import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import ImagenPerfil from '../../utils/ImagenPerfil';
-const EditarPerfilTab = ({ userData }) => {
+import UbicacionPeru from '../../Registerutils/address';
+import { useNavigate } from 'react-router-dom';
+
+const EditarPerfilScreen = ({ userData, setUserData}) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
+    id_usuario: userData.id_usuario || '',
     nombre: userData.nombre_completo || '',
     email: userData.email || '',
     telefono: userData.telefono || '',
     dni: userData.dni || '',
-    password: '',
-    tipo_usuario: userData.tipo_usuario || '',
+    contrasena: userData.contrasena || '',
+    tipo_usuario: userData.tipo_usuario,
     ubicacion: userData.Ubicacion || '',
-    // Ahora asumimos que `fotoPerfil` es el ID de Google Drive
     fotoPerfil: userData.foto_perfil_url,
   });
 
-  const handleChange = (e) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+  const [direccion, setUbicacion] = useState({
+    departamento: "",
+    provincia: "",
+    distrito: "",
+    tipoVia: "",
+    nombreVia: "",
+    numero: ""
+  });
+
+
+  const parseUbicacion = (ubicacionString) => {
+    if (!ubicacionString) {
+      return {
+        departamento: "",
+        provincia: "",
+        distrito: "",
+        tipoVia: "",
+        nombreVia: "",
+        numero: "",
+        lat: "",
+        lng: ""
+      };
+    }
+
+    const [parteDireccion, parteCoordenaas] = ubicacionString.split(";");
+    const [lat, lng] = parteCoordenaas.split(",").map(parseFloat);
+    const trozos = parteDireccion.split(",").map((s) => s.trim());
+    const primeraParte = trozos[0] || "";
+    const segmento = primeraParte.split(" ").filter((x) => x.length > 0);
+    let tipoVia = "";
+    let numero = "";
+    let nombreVia = "";
+
+    if (segmento.length >= 2) {
+      tipoVia = segmento[0];                                   // "Calle"
+      numero = segmento[segmento.length - 1];                  // "205"
+      nombreVia = segmento.slice(1, segmento.length - 1).join(" "); // "Independencia"
+    } else {
+      nombreVia = primeraParte;
+    }
+    const distrito = trozos[1] || "";
+    const provincia = trozos[2] || "";
+    const departamento = trozos[3] || "";
+
+    return { departamento, provincia, distrito, tipoVia, nombreVia, numero, lat, lng};
   };
 
-  const handleSubmit = () => {
-    const formPayload = new FormData();
-    formPayload.append('nombre_completo', formData.nombre);
-    formPayload.append('email', formData.email);
-    formPayload.append('telefono', formData.telefono);
-    formPayload.append('dni', parseInt(formData.dni, 10));
-    formPayload.append('contrasena', formData.password);
-    formPayload.append('tipo_usuario', formData.tipo_usuario);
-    formPayload.append('ubicacion', formData.ubicacion);
-    // Guardamos el ID de Drive en lugar de URL
-    formPayload.append('foto_perfil_id', formData.fotoPerfil || '');
+  useEffect(() => {
+    const nuevaDireccion = parseUbicacion(formData.ubicacion);
+    setUbicacion(nuevaDireccion);
+  }, [formData.ubicacion]);
 
-    // Aquí podrías enviar `formPayload` a tu API:
-    // fetch('/api/actualizar-perfil', { method: 'POST', body: formPayload })
-    //   .then(...)
-    //   .catch(...);
+  const [showPassword, setShowPassword] = useState(false);
+  const [fotoPerfil, setFotoPerfil] = useState(null);
+  const [preview, setPreview] = useState(userData.foto_perfil_url);
+
+  const handleInputChange = (e) => {
+    setFormData({...formData, [e.target.name]: e.target.value});
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const formPayload = new FormData();
+    formPayload.append("id_usuario", formData.id_usuario);
+    formPayload.append("nombre_completo", formData.nombre);
+    formPayload.append("email", formData.email);
+    formPayload.append("telefono", formData.telefono);
+    formPayload.append("dni", parseInt(formData.dni));
+    formPayload.append("tipo_usuario", formData.tipo_usuario);
+    formPayload.append("contrasena", formData.contrasena);
+    if (fotoPerfil) formPayload.append("foto_perfil_url", fotoPerfil);
+    
+
+    // ubicación nueva si se modificó
+    if (Object.keys(direccion).length > 0) {
+      const { departamento, provincia, distrito, tipoVia, nombreVia, numero, lat, lng } = direccion;
+      const ubicacion = `${tipoVia} ${nombreVia} ${numero}, ${distrito}, ${provincia}, ${departamento}, Peru; ${lat}, ${lng}`;
+      formPayload.append("ubicacion", ubicacion);
+    }
+
+    try {
+      const response = await fetch("http://127.0.0.1:5000/auth/register", {
+        method: "POST",
+        credentials: "include",
+        body: formPayload,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.msg || "Error al actualizar perfil.");
+        return;
+      }
+
+      const usuario = data.usuario;
+      setUserData(usuario);// actualiza el estado global
+      navigate('..');
+
+    } catch (error) {
+      console.error("Error al conectar con API:", error);
+      alert("Error de red.");
+    }
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-8 bg-white rounded-2xl shadow-lg">
-      <h2 className="text-3xl font-semibold text-blue-700 mb-6 text-center">
-        Editar Perfil
-      </h2>
-
-      {/* Vista previa de imagen */}
-      <div className="flex flex-col items-center mb-6">
-        {formData.fotoPerfil ? (
-          <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-blue-200 mb-4">
-           <ImagenPerfil fotoUrl={formData.fotoPerfil} />
-          </div>
-        ) : (
-          <div className="w-32 h-32 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 mb-4">
-          </div>
-        )}
-        <input
-          name="fotoPerfil"
-          value={formData.fotoPerfil}
-          onChange={handleChange}
-          className="w-full md:w-2/3 border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-300"
-          placeholder="ID de Google Drive de la foto"
-        />
-      </div>
-      {/* Fin vista previa */}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="flex flex-col space-y-2">
-          <label htmlFor="nombre" className="text-gray-700 font-medium">
-            Nombre completo
-          </label>
-          <input
-            id="nombre"
-            name="nombre"
-            value={formData.nombre}
-            onChange={handleChange}
-            className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-300"
-            placeholder="Ingresa tu nombre"
-          />
-        </div>
-
-        <div className="flex flex-col space-y-2">
-          <label htmlFor="email" className="text-gray-700 font-medium">
-            Correo electrónico
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-300"
-            placeholder="usuario@ejemplo.com"
-          />
-        </div>
-
-        <div className="flex flex-col space-y-2">
-          <label htmlFor="telefono" className="text-gray-700 font-medium">
-            Teléfono
-          </label>
-          <input
-            id="telefono"
-            name="telefono"
-            value={formData.telefono}
-            onChange={handleChange}
-            className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-300"
-            placeholder="Ej: +51 912345678"
-          />
-        </div>
-
-        <div className="flex flex-col space-y-2">
-          <label htmlFor="dni" className="text-gray-700 font-medium">
-            DNI
-          </label>
-          <input
-            id="dni"
-            name="dni"
-            value={formData.dni}
-            onChange={handleChange}
-            className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-300"
-            placeholder="Ej: 12345678"
-          />
-        </div>
-
-        <div className="flex flex-col space-y-2">
-          <label htmlFor="password" className="text-gray-700 font-medium">
-            Contraseña
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            value={formData.password}
-            onChange={handleChange}
-            className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-300"
-            placeholder="Nueva contraseña"
-          />
-        </div>
-
-        <div className="flex flex-col space-y-2">
-          <label htmlFor="tipo_usuario" className="text-gray-700 font-medium">
-            Tipo de Usuario
-          </label>
-          <input
-            id="tipo_usuario"
-            name="tipo_usuario"
-            value={formData.tipo_usuario}
-            onChange={handleChange}
-            className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-300"
-            placeholder="Ej: Administrador, Cliente"
-          />
-        </div>
-
-        <div className="flex flex-col space-y-2 md:col-span-2">
-          <label htmlFor="ubicacion" className="text-gray-700 font-medium">
-            Ubicación
-          </label>
-          <input
-            id="ubicacion"
-            name="ubicacion"
-            value={formData.ubicacion}
-            onChange={handleChange}
-            className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-300"
-            placeholder="Ciudad, País"
-          />
-        </div>
-      </div>
-
-      <div className="mt-8 text-center">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <header className="bg-white shadow-sm p-6 flex items-center">
         <button
-          onClick={handleSubmit}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg shadow-md transition duration-200"
+          onClick={() => navigate('..')}
+          className="mr-4 p-2 text-gray-600 hover:text-blue-600 transition-colors"
         >
-          Guardar Cambios
+          <ArrowLeft size={24} />
         </button>
+        <div className="text-2xl font-bold text-blue-600">Editar Perfil</div>
+      </header>
+
+      <div className="flex items-center justify-center py-12">
+        <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="flex justify-center mb-6">
+              <label htmlFor="fotoPerfil" className="cursor-pointer">
+                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-blue-200 shadow-md relative">
+                  {preview || formData.fotoPerfil ? (
+                    <ImagenPerfil fotoUrl={preview || formData.fotoPerfil} />
+                  ) : (
+                    <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
+                      Sin imagen
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black bg-opacity-20 hover:bg-opacity-30 transition-opacity flex items-center justify-center text-white text-sm">
+                    Cambiar
+                  </div>
+                </div>
+                <input
+                  id="fotoPerfil"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      setFotoPerfil(file);                      // archivo para enviar
+                      setPreview(URL.createObjectURL(file));    // vista previa en local
+                    }
+                  }}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            <input
+              type="text"
+              name="nombre"
+              placeholder="Nombre y Apellidos"
+              value={formData.nombre}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+
+            <input
+              type="email"
+              name="email"
+              placeholder="Correo Electrónico"
+              value={formData.email}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+
+            <input
+              type="tel"
+              name="telefono"
+              placeholder="Teléfono"
+              maxLength={9}
+              value={formData.telefono}
+              onChange={(e) => {
+                  const value = e.target.value;
+                  if (/^\d*$/.test(value)) {  // Solo permite números
+                    handleInputChange(e);
+                  }
+                }}
+              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+
+            <input
+              type="text"
+              name="dni"
+              placeholder="DNI"
+              maxLength={8}
+              value={formData.dni}
+              onChange={(e) => {
+                  const value = e.target.value;
+                  if (/^\d*$/.test(value)) {  // Solo permite números
+                    handleInputChange(e);
+                  }
+                }}
+              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+
+            <UbicacionPeru direccion={direccion} setUbicacion={setUbicacion} />
+
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="contrasena"
+                placeholder="Nueva Contraseña (opcional)"
+                value={formData.contrasena}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+            >
+              GUARDAR CAMBIOS
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
 };
 
-export default EditarPerfilTab;
+export default EditarPerfilScreen;
