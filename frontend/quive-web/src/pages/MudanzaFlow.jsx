@@ -76,6 +76,7 @@ const MudanzaFlow = ({ userData, onNavigate, setActiveTab }) => {
       {/* Paso actual */}
       {currentStep === 1 && (
         <DetallesMudanza
+          userData={userData}
           formData={formData}
           setFormData={setFormData}
           nextStep={nextStep}

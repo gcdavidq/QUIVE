@@ -6,7 +6,7 @@ const InicioTab = ({ userData, setActiveTab}) => {
     <>
     {/* Welcome Card */}
     <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 text-white mb-8">
-      <h2 className="text-2xl font-bold mb-2">¡Hola, {userData.name || 'Usuario'}!</h2>
+      <h2 className="text-2xl font-bold mb-2">¡Hola, {userData.nombre_completo  || 'Usuario'}!</h2>
       <p className="text-blue-100 mb-4">
         ¿Necesitas mudarte? Encuentra el camión perfecto para ti.'
       </p>
@@ -53,9 +53,11 @@ const InicioTab = ({ userData, setActiveTab}) => {
           <MapPin className="text-blue-600 mb-2" size={24} />
           <p className="text-sm font-semibold text-gray-800">Ver Mapa</p>
         </button>
-        <button className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
-          <Package className="text-blue-600 mb-2" size={24} />
-          <p className="text-sm font-semibold text-gray-800">Historial</p>
+        <button 
+          onClick={() => setActiveTab('perfil/historial')} 
+          className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+            <Package className="text-blue-600 mb-2" size={24} />
+            <p className="text-sm font-semibold text-gray-800">Historial</p>
         </button>
       </div>
     </div>

@@ -89,7 +89,7 @@ const EditarPerfilScreen = ({ userData, setUserData}) => {
     formPayload.append("dni", parseInt(formData.dni));
     formPayload.append("tipo_usuario", formData.tipo_usuario);
     formPayload.append("contrasena", formData.contrasena);
-    if (fotoPerfil) formPayload.append("foto_perfil_url", fotoPerfil);
+    formPayload.append("foto_perfil_url", fotoPerfil ?? formData.fotoPerfil);
     
 
     // ubicación nueva si se modificó

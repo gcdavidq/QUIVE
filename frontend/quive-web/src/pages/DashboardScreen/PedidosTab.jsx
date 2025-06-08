@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import {MapPin, Truck} from 'lucide-react';
 
-const PedidosTab = ({userType, userData}) => {
+const PedidosTab = ({userType, userData, setActiveTab}) => {
     const [pedidos] = useState([
     {
       id: 1,
@@ -59,10 +59,13 @@ const PedidosTab = ({userType, userData}) => {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-blue-600">
-          {userType === 'transportista' ? 'Pedidos Disponibles' : 'Mis Pedidos'}
+          Mis Pedidos
         </h2>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-          {userType === 'transportista' ? 'Filtrar' : 'Nuevo Pedido'}
+        <button 
+          onClick={() => setActiveTab('mudanza')}  
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Nuevo Pedido
         </button>
       </div>
 

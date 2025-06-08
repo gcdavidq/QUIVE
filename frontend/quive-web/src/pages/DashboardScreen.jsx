@@ -56,7 +56,11 @@ const DashboardScreen = ({ userData, onNavigate, userType, setUserData}) => {
           <Route
             path="pedidos"
             element={
-              <PedidosTab userType={userType} userData={userData} />
+              <PedidosTab 
+                userType={userType} 
+                userData={userData}
+                setActiveTab={handleTabChange} 
+              />
             }
           />
           <Route path="seguimiento" element={<SeguimientoTab />} />

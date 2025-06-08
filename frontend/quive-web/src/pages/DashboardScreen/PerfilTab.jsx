@@ -1,5 +1,4 @@
 import React from 'react';
-import { User } from 'lucide-react';
 import { useNavigate, Routes, Route, Outlet } from 'react-router-dom';
 import EditarPerfilTab from './Perfilopcions/EditarPerfilTab';
 import MisDirecciones from './Perfilopcions/MisDirecciones';
@@ -7,6 +6,7 @@ import MetodosPago from './Perfilopcions/MetodosPago';
 import HistorialMudanzas from './Perfilopcions/HistorialMudanzas';
 import Configuracion from './Perfilopcions/Configuracion';
 import AyudaSoporte from './Perfilopcions/AyudaSoporte';
+import ImagenPerfil from '../utils/ImagenPerfil';
 
 
 const PerfilTab = ({ userData, onNavigate, setUserData}) => {
@@ -25,11 +25,11 @@ const PerfilTab = ({ userData, onNavigate, setUserData}) => {
                 {/* Profile Info */}
                 <div className="bg-white rounded-lg p-6 shadow-sm">
                   <div className="flex items-center space-x-4 mb-6">
-                    <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
-                      <User className="text-white" size={32} />
+                    <div className="w-16 h-16 rounded-full overflow-hidden border-2 shadow-md">
+                      <ImagenPerfil fotoUrl={userData.foto_perfil_url} />
                     </div>
                     <div>
-                      <h3 className="text-xl font-semibold text-gray-800">{userData.name || 'Usuario'}</h3>
+                      <h3 className="text-xl font-semibold text-gray-800">{userData.nombre_completo || 'Usuario'}</h3>
                       <p className="text-gray-600">{userData.email || 'email@ejemplo.com'}</p>
                     </div>
                   </div>

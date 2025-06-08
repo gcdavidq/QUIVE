@@ -371,7 +371,7 @@ const RegisterScreen = ({onNavigate, userType, setUserType}) => {
 
             <div className="relative">
               <input
-                type='text'
+                type={showPassword ? 'text' : 'password'}
                 name="password"
                 placeholder="Contraseña"
                 value={formData.password}
