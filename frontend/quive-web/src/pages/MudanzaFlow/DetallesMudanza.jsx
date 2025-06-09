@@ -2,13 +2,21 @@ import { useState } from 'react';
 import { Calendar, Clock } from 'lucide-react';
 import UbicacionPeru from '../Registerutils/address';
 import RutaMap from '../../components/RutaMap';
+import { parseUbicacion } from '../../components/ubicacion';
 
 const DetallesMudanza = ({ userData, formData, setFormData, nextStep }) => {
-  const [origenDireccion, setOrigenDireccion] = useState({});
+  const [origenDireccion, setOrigenDireccion] = useState(() => {
+    if (userData.Ubicacion) {
+      return parseUbicacion(userData.Ubicacion);
+    }
+    return {};
+  });
+
   const [destinoDireccion, setDestinoDireccion] = useState({});
   const [distanciaKm, setDistanciaKm] = useState(null);
   const [duracionMin, setDuracionMin] = useState(null);
   const [rutaGeo, setRutaGeo] = useState(null);
+  
 
   const validarPaso1 = () => {
     if (!formData.fecha.trim() || !formData.hora.trim()) {

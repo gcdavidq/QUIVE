@@ -1,8 +1,9 @@
-import React, { useState, useEffect  } from 'react';
+import React, { useState } from 'react';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import ImagenPerfil from '../../utils/ImagenPerfil';
 import UbicacionPeru from '../../Registerutils/address';
 import { useNavigate } from 'react-router-dom';
+import { parseUbicacion } from '../../../components/ubicacion';
 
 const EditarPerfilScreen = ({ userData, setUserData}) => {
   const navigate = useNavigate();
@@ -17,58 +18,19 @@ const EditarPerfilScreen = ({ userData, setUserData}) => {
     ubicacion: userData.Ubicacion || '',
     fotoPerfil: userData.foto_perfil_url,
   });
-
-  const [direccion, setUbicacion] = useState({
-    departamento: "",
+  const [direccion, setUbicacion] = useState(() => {
+    if (userData.Ubicacion) {
+      return parseUbicacion(userData.Ubicacion);
+    }
+    return {departamento: "",
     provincia: "",
     distrito: "",
     tipoVia: "",
     nombreVia: "",
-    numero: ""
+    numero: ""};
   });
 
 
-  const parseUbicacion = (ubicacionString) => {
-    if (!ubicacionString) {
-      return {
-        departamento: "",
-        provincia: "",
-        distrito: "",
-        tipoVia: "",
-        nombreVia: "",
-        numero: "",
-        lat: "",
-        lng: ""
-      };
-    }
-
-    const [parteDireccion, parteCoordenaas] = ubicacionString.split(";");
-    const [lat, lng] = parteCoordenaas.split(",").map(parseFloat);
-    const trozos = parteDireccion.split(",").map((s) => s.trim());
-    const primeraParte = trozos[0] || "";
-    const segmento = primeraParte.split(" ").filter((x) => x.length > 0);
-    let tipoVia = "";
-    let numero = "";
-    let nombreVia = "";
-
-    if (segmento.length >= 2) {
-      tipoVia = segmento[0];                                   // "Calle"
-      numero = segmento[segmento.length - 1];                  // "205"
-      nombreVia = segmento.slice(1, segmento.length - 1).join(" "); // "Independencia"
-    } else {
-      nombreVia = primeraParte;
-    }
-    const distrito = trozos[1] || "";
-    const provincia = trozos[2] || "";
-    const departamento = trozos[3] || "";
-
-    return { departamento, provincia, distrito, tipoVia, nombreVia, numero, lat, lng};
-  };
-
-  useEffect(() => {
-    const nuevaDireccion = parseUbicacion(formData.ubicacion);
-    setUbicacion(nuevaDireccion);
-  }, [formData.ubicacion]);
 
   const [showPassword, setShowPassword] = useState(false);
   const [fotoPerfil, setFotoPerfil] = useState(null);

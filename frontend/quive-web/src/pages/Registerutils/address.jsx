@@ -66,7 +66,12 @@ const UbicacionPeru = ({ direccion, setUbicacion }) => {
   const datosUbicacion = useUbicacionDesdeExcel() || {};
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [resultados, setResultados] = useState([]);
-  const [positionSeleccionada, setPositionSeleccionada] = useState(null);
+  const [positionSeleccionada, setPositionSeleccionada] = useState(() => {
+    if (direccion.lat && direccion.lng) {
+      return [parseFloat(direccion.lat), parseFloat(direccion.lng)];
+    }
+    return null;
+  });
   const [haBuscado, setHaBuscado] = useState(false);
 
   // Construye el string de búsqueda para Nominatim
