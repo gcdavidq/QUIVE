@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
-import ImagenPerfil from '../../utils/Imagen';
+import SubirImagen from '../../utils/SubirImagen';
 import UbicacionPeru from '../../Registerutils/address';
 import { useNavigate } from 'react-router-dom';
-import { parseUbicacion } from '../../../components/ubicacion';
+import { parseUbicacion } from '../../utils/ubicacion';
 
 const EditarPerfilScreen = ({ userData, setUserData}) => {
   const navigate = useNavigate();
@@ -35,6 +35,7 @@ const EditarPerfilScreen = ({ userData, setUserData}) => {
   const [showPassword, setShowPassword] = useState(false);
   const [fotoPerfil, setFotoPerfil] = useState(null);
   const [preview, setPreview] = useState(userData.foto_perfil_url);
+  console.log(preview)
 
   const handleInputChange = (e) => {
     setFormData({...formData, [e.target.name]: e.target.value});
@@ -104,33 +105,15 @@ const EditarPerfilScreen = ({ userData, setUserData}) => {
         <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex justify-center mb-6">
-              <label htmlFor="fotoPerfil" className="cursor-pointer">
-                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-blue-200 shadow-md relative">
-                  {preview || formData.fotoPerfil ? (
-                    <ImagenPerfil fotoUrl={preview || formData.fotoPerfil} />
-                  ) : (
-                    <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
-                      Sin imagen
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-black bg-opacity-20 hover:bg-opacity-30 transition-opacity flex items-center justify-center text-white text-sm">
-                    Cambiar
-                  </div>
-                </div>
-                <input
-                  id="fotoPerfil"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                      setFotoPerfil(file);                      // archivo para enviar
-                      setPreview(URL.createObjectURL(file));    // vista previa en local
-                    }
-                  }}
-                  className="hidden"
-                />
-              </label>
+              <SubirImagen
+                defaultPreview={preview}
+                onFotoSeleccionada={(file) => {
+                  setFotoPerfil(file); // para enviar al backend
+                  setPreview(URL.createObjectURL(file)); // para mostrar preview
+                }}
+                id_imagen="fotoPerfil"
+                imgClassName="w-32 h-32 rounded-full object-cover border-4 border-blue-200 shadow-md"
+              />
             </div>
 
             <input

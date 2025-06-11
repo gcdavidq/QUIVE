@@ -4,7 +4,7 @@ import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import UbicacionPeru from "./Registerutils/address";
 import SubidaDocumentos from './Registerutils/documentos';
 import TarifasForm from './Registerutils/tarifas';
-import SubirImagen from '../components/SubirImagen'
+import SubirImagen from './utils/SubirImagen'
 
 
 const RegisterScreen = ({onNavigate, userType, setUserType}) => {

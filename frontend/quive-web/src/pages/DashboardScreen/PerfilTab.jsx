@@ -6,7 +6,7 @@ import MetodosPago from './Perfilopcions/MetodosPago';
 import HistorialMudanzas from './Perfilopcions/HistorialMudanzas';
 import Configuracion from './Perfilopcions/Configuracion';
 import AyudaSoporte from './Perfilopcions/AyudaSoporte';
-import ImagenPerfil from '../utils/Imagen';
+import SubirImagen from '../utils/SubirImagen';
 
 
 const PerfilTab = ({ userData, onNavigate, setUserData}) => {
@@ -26,7 +26,7 @@ const PerfilTab = ({ userData, onNavigate, setUserData}) => {
                 <div className="bg-white rounded-lg p-6 shadow-sm">
                   <div className="flex items-center space-x-4 mb-6">
                     <div className="w-16 h-16 rounded-full overflow-hidden border-2 shadow-md">
-                      <ImagenPerfil fotoUrl={userData.foto_perfil_url} />
+                      <SubirImagen defaultPreview={userData.foto_perfil_url} editable={false} imgClassName={"w-16 h-16 rounded-full overflow-hidden border-2 shadow-md"}/>
                     </div>
                     <div>
                       <h3 className="text-xl font-semibold text-gray-800">{userData.nombre_completo || 'Usuario'}</h3>

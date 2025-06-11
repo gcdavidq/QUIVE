@@ -3,12 +3,14 @@ from api.objetos.services import (
     list_tipos_objeto,
     create_tipo_objeto,
     list_objetos_de_solicitud,
-    add_objeto_a_solicitud,
+    add_objetos_a_solicitud,
     update_objeto_de_solicitud,
     delete_objeto_de_solicitud
 )
 from api.objetos.schemas import TipoObjetoSchema, AddObjetoASolicitudSchema
+from utils.quickstart import subir_a_dropbox
 from marshmallow import ValidationError
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 objetos_bp = Blueprint("objetos_bp", __name__)
 
@@ -41,16 +43,49 @@ def get_objetos_solicitud(id_solicitud):
 
 @objetos_bp.route("/<int:id_solicitud>/objetos", methods=["POST"])
 def post_objetos_solicitud(id_solicitud):
-    payload = request.get_json()
-    schema = AddObjetoASolicitudSchema()
-    try:
-        data = schema.load(payload)
-    except ValidationError as err:
-        return jsonify({"errors": err.messages}), 400
+    payload = []
+    i = 0
+    # Paso 1: recolectar los datos primero (sin subir aún)
+    objetos_temp = []
+    while f'objetos[{i}][id_tipo]' in request.form:
+        id_tipo = request.form.get(f'objetos[{i}][id_tipo]')
+        cantidad = request.form.get(f'objetos[{i}][cantidad]')
+        imagen_file = request.files.get(f'objetos[{i}][imagen_file]')
+        imagen_url = request.form.get(f'objetos[{i}][imagen_url]')
+        objetos_temp.append({
+            "id_tipo": id_tipo,
+            "cantidad": cantidad,
+            "imagen_file": imagen_file,
+            "imagen_url": imagen_url,
+        })
+        i += 1
 
-    nuevo = add_objeto_a_solicitud(id_solicitud, data)
-    if "error" in nuevo:
+    # Paso 2: función para procesar cada objeto
+    def procesar_objeto(obj):
+        if obj["imagen_file"]:
+            obj["imagen_url"] = subir_a_dropbox(obj["imagen_file"], f"/{obj['imagen_file'].filename}")
+        return {
+            "id_tipo": obj["id_tipo"],
+            "cantidad": obj["cantidad"],
+            "imagen_url": obj["imagen_url"],
+        }
+
+    # Paso 3: ejecutar en paralelo
+    with ThreadPoolExecutor(max_workers=5) as executor:  # puedes ajustar el número de workers
+        futures = [executor.submit(procesar_objeto, obj) for obj in objetos_temp]
+        for future in as_completed(futures):
+            payload.append(future.result())
+    schema = AddObjetoASolicitudSchema()
+    data = []
+    for objet in payload:
+        try:
+            data.append(schema.load(objet))
+        except ValidationError as err:
+            return jsonify({"errors": err.messages}), 400
+    nuevo = add_objetos_a_solicitud(id_solicitud, data)
+    if isinstance(nuevo, dict) and "error" in nuevo:
         return jsonify({"msg": nuevo["error"]}), 400
+
     return jsonify(nuevo), 201
 
 @objetos_bp.route("/<int:id_solicitud>/objetos/<int:id_objeto>", methods=["PUT"])

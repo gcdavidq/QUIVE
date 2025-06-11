@@ -34,9 +34,7 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
     }));
   };
 
-  const [nuevoObjeto, setNuevoObjeto] = useState({
-    tipo: 'Cocina', cantidad: 1, descripcion: '', altura: '', ancho: '', profundidad: '', fragil: false
-  });
+  const [nuevoObjeto, setNuevoObjeto] = useState({});
 
   const nextStep = () => currentStep < 5 && setCurrentStep(currentStep + 1);
   const prevStep = () => currentStep > 1 && setCurrentStep(currentStep - 1);
@@ -49,9 +47,11 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
   };
 
   const agregarObjeto = () => {
-    if (!nuevoObjeto.descripcion.trim()) return alert('Ingrese una descripción');
+    if (!nuevoObjeto.cantidad?.toString().trim() || !nuevoObjeto.variante?.toString().trim()) {
+  return alert('Ingresa todos los campos');
+}
     setFormData({ ...formData, objetos: [...formData.objetos, { ...nuevoObjeto, id: Date.now() }] });
-    setNuevoObjeto({ tipo: 'Cocina', cantidad: 1, descripcion: '', altura: '', ancho: '', profundidad: '', fragil: false });
+    setNuevoObjeto({});
   };
 
   const eliminarObjeto = id => setFormData({ ...formData, objetos: formData.objetos.filter(obj => obj.id !== id) });

@@ -3,6 +3,7 @@ from api.solicitudes.services import (
     get_solicitud_by_id,
     create_solcitud,
     update_solicitud,
+    actualizar_solicitud_completa,
     list_solicitudes_disponibles,
     get_tarifa_detallada
 )
@@ -29,7 +30,18 @@ def post_solicitud():
     resultado = create_solcitud(data)
     return jsonify(resultado), 201
 
-@solicitudes_bp.route("/<int:id_solicitud>", methods=["PUT"])
+@solicitudes_bp.route("/<int:id_solicitud>/elegido", methods=["PUT"])
+def put_solicitud(id_solicitud):
+    payload = request.get_json()
+    schema = CrearSolicitudSchema()
+    try:
+        data = schema.load(payload)
+    except ValidationError as err:
+        return jsonify({"errors": err.messages}), 400
+    resultado = actualizar_solicitud_completa(id_solicitud, data)
+    return jsonify(resultado), 201
+
+@solicitudes_bp.route("/<int:id_solicitud>/elegido", methods=["PUT"])
 def put_solicitud(id_solicitud):
     payload = request.get_json()
     schema = ActualizarSolicitudSchema(partial=True)

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Calendar, Clock } from 'lucide-react';
 import UbicacionPeru from '../Registerutils/address';
-import RutaMap from '../../components/RutaMap';
-import { parseUbicacion } from '../../components/ubicacion';
+import RutaMap from '../utils/RutaMap';
+import { parseUbicacion } from '../utils/ubicacion';
 
 const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, nextStep }) => {
   const [origenDireccion, setOrigenDireccion] = useState(() => {
@@ -33,6 +33,23 @@ const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, 
     const { departamento, provincia, distrito, tipoVia, nombreVia, numero, lat, lng } = direccionObj;
     return `${tipoVia} ${nombreVia} ${numero}, ${distrito}, ${provincia}, ${departamento}, Peru; ${lat}, ${lng}`;
   };
+
+  const huboCambios = () => {
+    const origenFormateado = formatearDireccion(origenDireccion);
+    const destinoFormateado = formatearDireccion(destinoDireccion);
+
+    const fechaHoraActual = new Date(`${formData.fecha}T${formData.hora}`).toISOString().slice(0, 19);
+
+    return (
+      origenFormateado !== formData.origen ||
+      destinoFormateado !== formData.destino ||
+      distanciaKm !== formData.distancia ||
+      duracionMin !== formData.tiempos_estimado ||
+      JSON.stringify(rutaGeo) !== JSON.stringify(formData.ruta) ||
+      !formData.id_solicitud // si no hay solicitud registrada aún, hay que crearla
+    );
+  };
+
 
   return (
     <div className="p-6">
@@ -111,6 +128,12 @@ const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, 
             const destinoFinal = formatearDireccion(destinoDireccion);
             const fechaHora = new Date(`${formData.fecha}T${formData.hora}`).toISOString().slice(0, 19);
 
+            if (!huboCambios()) {
+              console.log("No hubo cambios, se omite llamada a API.");
+              nextStep();
+              return;
+            }
+
             try {
               const res = await fetch('http://127.0.0.1:5000/solicitudes', {
                 method: "POST",
@@ -130,6 +153,12 @@ const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, 
               });
 
               const data = await res.json();
+
+              if (!res.ok) {
+                alert(data.msg || 'Error al registrar mudanza');
+                return;
+              }
+
               actualizarFormData({
                 id_solicitud: data.id_solicitud,
                 origen: origenFinal,
@@ -140,19 +169,13 @@ const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, 
                 hora: formData.hora,
                 fecha: formData.fecha
               });
-              if (!res.ok) {
-                alert(data.msg || 'Error al registrar mudanza');
-                return;
-              }
+
+              nextStep();
 
             } catch (err) {
               console.error("Error al conectar con API:", err);
               alert("Error de red.");
             }
-            // Actualizar formData con la info generada
-  
-            console.log(formData);
-            nextStep();
           }}
           className="w-full bg-blue-500 text-white py-3 rounded-lg font-medium mt-6 hover:bg-blue-600 transition-colors"
         >

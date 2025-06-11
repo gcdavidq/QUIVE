@@ -19,7 +19,7 @@ def register():
         elif request.form.get("foto_perfil_url"):
             payload["foto_perfil_url"] = request.form.get("foto_perfil_url")
         else:
-            payload["foto_perfil_url"] = 'https://www.dropbox.com/scl/fi/b4ttqjb0f6on9v4dxixwq/satoru-gojo-de-jujutsu-kaisen_3840x2160_xtrafondos.com.jpg?rlkey=j9xq97kkqcxdsojldqxnvbeha&dl=0'
+            payload["foto_perfil_url"] = 'https://dl.dropboxusercontent.com/scl/fi/b4ttqjb0f6on9v4dxixwq/satoru-gojo-de-jujutsu-kaisen_3840x2160_xtrafondos.com.jpg?rlkey=j9xq97kkqcxdsojldqxnvbeha'
         data = schema.load(payload)
         print(data)
 

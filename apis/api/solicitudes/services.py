@@ -31,6 +31,8 @@ def create_solcitud(data: dict):
         "id_solicitud": id_sol,
     }
 
+def actualizar_solicitud_completa(id_solicitud, data):
+
 def update_solicitud(id_solicitud: int, data: dict):
     """
     Permite reprogramar o cancelar (si faltan > 2 horas).

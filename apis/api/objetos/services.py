@@ -39,20 +39,31 @@ def list_objetos_de_solicitud(id_solicitud: int):
     cursor.execute(sql, (id_solicitud,))
     return cursor.fetchall()
 
-def add_objeto_a_solicitud(id_solicitud: int, data: dict):
+def add_objetos_a_solicitud(id_solicitud: int, objetos: list):
     conn = get_db()
     cursor = conn.cursor()
 
-    # (Opcional) Verificar que la solicitud esté en estado "en espera" y que el cliente sea el dueño
     sql = """
         INSERT INTO Objetos_Solicitud (id_solicitud, id_tipo, cantidad, observaciones, imagen_url)
         VALUES (%s, %s, %s, %s, %s)
     """
-    cursor.execute(sql, (
-        id_solicitud, data["id_tipo"], data["cantidad"], data.get("observaciones"), data.get("imagen_url")
-    ))
-    new_id = cursor.lastrowid
-    return get_objeto_by_id(new_id)
+
+    valores = [
+        (
+            id_solicitud,
+            obj["id_tipo"],
+            obj["cantidad"],
+            obj.get("observaciones"),
+            obj.get("imagen_url")
+        )
+        for obj in objetos
+    ]
+
+    cursor.executemany(sql, valores)
+    conn.commit()
+
+    # (Opcional) retornar los objetos insertados si necesitas sus IDs
+    return cursor.rowcount  # o una lista si haces un SELECT posterior
 
 def get_objeto_by_id(id_objeto: int):
     conn = get_db()

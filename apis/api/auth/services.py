@@ -71,8 +71,6 @@ def register_or_update_user(data: dict) -> dict:
     """
     cursor.execute(sql_get, (user_id,))
     usuario = cursor.fetchone()
-    if "id_usuario" in data:
-        usuario["contrasena"] = data["contrasena"]
     return {
         "usuario": usuario
     }
@@ -96,7 +94,6 @@ def login_user(data: dict) -> dict:
     if not check_password(data["contrasena"], usuario["contrasena_hash"]):
         return {"error": "Credenciales inválidas"}
     del usuario['contrasena_hash']
-    usuario["contrasena"] = data["contrasena"]
     return {
         "usuario": usuario
     }
