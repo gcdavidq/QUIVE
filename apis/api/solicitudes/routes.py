@@ -31,7 +31,7 @@ def post_solicitud():
     return jsonify(resultado), 201
 
 @solicitudes_bp.route("/<int:id_solicitud>/elegido", methods=["PUT"])
-def put_solicitud(id_solicitud):
+def put_solicitud_elegida(id_solicitud):
     payload = request.get_json()
     schema = CrearSolicitudSchema()
     try:

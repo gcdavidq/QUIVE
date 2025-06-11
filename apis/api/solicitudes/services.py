@@ -32,6 +32,32 @@ def create_solcitud(data: dict):
     }
 
 def actualizar_solicitud_completa(id_solicitud, data):
+    conn = get_db()
+    cursor = conn.cursor()
+    # Actualizar solicitud existente
+    sql_update = """
+                UPDATE Solicitudes
+                SET origen = %s,
+                    destino = %s,
+                    ruta = %s,
+                    distancia = %s,
+                    tiempo_estimado = %s,
+                    fecha_hora = %s
+                WHERE id_solicitud = %s
+            """
+    cursor.execute(sql_update, (
+        data["origen"],
+        data["destino"],
+        data["ruta"],
+        data["distancia"],
+        data["tiempo_estimado"],
+        data["fecha_hora"],
+        id_solicitud
+    ))
+    conn.commit()
+    return {
+        "id_solicitud": data["id_solicitud"]
+    }
 
 def update_solicitud(id_solicitud: int, data: dict):
     """
