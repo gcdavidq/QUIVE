@@ -65,20 +65,6 @@ def get_documentos_by_id(id_usuario: int):
     cursor.execute(sql, (id_usuario,))
     return cursor.fetchone()
 
-def change_verification_status(id_usuario: int, data: dict):
-    """
-    Admin: cambia estado de verificación de un transportista.
-    """
-    nuevo_estado = data.get("estado_verificacion")
-    mensaje = data.get("mensaje", None)
-    conn = get_db()
-    cursor = conn.cursor()
-    if mensaje:
-        cursor.execute("UPDATE Documentos_Transportista SET estado_verificacion=%s WHERE id_usuario=%s", (nuevo_estado, id_usuario))
-    else:
-        cursor.execute("UPDATE Documentos_Transportista SET estado_verificacion=%s WHERE id_usuario=%s", (nuevo_estado, id_usuario))
-    return get_documentos_by_id(id_usuario)
-
 def list_transportistas_verified(filters: dict):
     """
     Listado público de transportistas verificados, con filtros por proximidad,

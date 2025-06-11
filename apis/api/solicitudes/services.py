@@ -1,7 +1,7 @@
 from db import get_db
 from flask import session
 from datetime import datetime, timedelta
-import pymysql
+import json
 
 # Nota: para el cálculo de tarifa necesitarías utilidades en utils/geo.py.
 # Aquí haremos un cálculo de tarifa ficticio (p. ej. 10 unidades por objeto).
@@ -13,41 +13,22 @@ def get_solicitud_by_id(id_solicitud: int):
     return cursor.fetchone()
 
 def create_solcitud(data: dict):
-    usuario = session.get("usuario")
-    user_id = usuario["id_usuario"]
+    user_id = data["id_usuario"]
     conn = get_db()
     cursor = conn.cursor()
 
     # 1) Insertar en Solicitudes
     sql_insert = """
-        INSERT INTO Solicitudes (id_cliente, origen, destino, fecha_hora, estado)
-        VALUES (%s, %s, %s, %s, 'en espera')
+        INSERT INTO Solicitudes (id_cliente, origen, destino, ruta, distancia, tiempo_estimado, fecha_hora, estado)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, 'en espera')
     """
     cursor.execute(sql_insert, (
-        user_id, data["origen"], data["destino"], data["fecha_hora"]
+        user_id, data["origen"], data["destino"], data['ruta'], data["distancia"], data["tiempo_estimado"], data["fecha_hora"]
     ))
     id_sol = cursor.lastrowid
 
-    # 2) Insertar Objetos_Solicitud
-    for obj in data["objetos"]:
-        sql_obj = """
-            INSERT INTO Objetos_Solicitud (id_solicitud, id_tipo, cantidad, observaciones, imagen_url)
-            VALUES (%s, %s, %s, %s, %s)
-        """
-        cursor.execute(sql_obj, (
-            id_sol, obj["id_tipo"], obj["cantidad"],
-            obj.get("observaciones"), obj.get("imagen_url")
-        ))
-
-    # 3) Calcular tarifa estimada (ejemplo simple: 10 por objeto)
-    tarifa_estimada = 0
-    for obj in data["objetos"]:
-        tarifa_estimada += obj["cantidad"] * 10
-
     return {
         "id_solicitud": id_sol,
-        "tarifa_estimada": tarifa_estimada,
-        "estado": "en espera"
     }
 
 def update_solicitud(id_solicitud: int, data: dict):

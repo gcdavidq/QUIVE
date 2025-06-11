@@ -4,18 +4,21 @@ import UbicacionPeru from '../Registerutils/address';
 import RutaMap from '../../components/RutaMap';
 import { parseUbicacion } from '../../components/ubicacion';
 
-const DetallesMudanza = ({ userData, formData, setFormData, nextStep }) => {
+const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, nextStep }) => {
   const [origenDireccion, setOrigenDireccion] = useState(() => {
-    if (userData.Ubicacion) {
-      return parseUbicacion(userData.Ubicacion);
-    }
+    if (formData.origen) return parseUbicacion(formData.origen);
+    if (userData.Ubicacion) return parseUbicacion(userData.Ubicacion);
     return {};
   });
 
-  const [destinoDireccion, setDestinoDireccion] = useState({});
-  const [distanciaKm, setDistanciaKm] = useState(null);
-  const [duracionMin, setDuracionMin] = useState(null);
-  const [rutaGeo, setRutaGeo] = useState(null);
+  const [destinoDireccion, setDestinoDireccion] = useState(() => {
+    if (formData.destino) return parseUbicacion(formData.destino);
+    return {};
+  });
+
+  const [distanciaKm, setDistanciaKm] = useState(formData.distancia || null);
+  const [duracionMin, setDuracionMin] = useState(formData.tiempos_estimado || null);
+  const [rutaGeo, setRutaGeo] = useState(formData.ruta || null);
   
 
   const validarPaso1 = () => {
@@ -72,7 +75,7 @@ const DetallesMudanza = ({ userData, formData, setFormData, nextStep }) => {
                   type="date"
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   value={formData.fecha}
-                  onChange={(e) => setFormData({ ...formData, fecha: e.target.value })}
+                  onChange={(e) => actualizarFormData({ ...formData, fecha: e.target.value })}
                   min={new Date().toISOString().split('T')[0]}
                 />
               </div>
@@ -88,7 +91,7 @@ const DetallesMudanza = ({ userData, formData, setFormData, nextStep }) => {
                   type="time"
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   value={formData.hora}
-                  onChange={(e) => setFormData({ ...formData, hora: e.target.value })}
+                  onChange={(e) => actualizarFormData({ ...formData, hora: e.target.value })}
                 />
               </div>
             </div>
@@ -109,7 +112,6 @@ const DetallesMudanza = ({ userData, formData, setFormData, nextStep }) => {
             const fechaHora = new Date(`${formData.fecha}T${formData.hora}`).toISOString().slice(0, 19);
 
             try {
-              // API: Crear solicitud
               const res = await fetch('http://127.0.0.1:5000/solicitudes', {
                 method: "POST",
                 credentials: "include",
@@ -120,30 +122,37 @@ const DetallesMudanza = ({ userData, formData, setFormData, nextStep }) => {
                   id_usuario: userData.id_usuario,
                   origen: origenFinal,
                   destino: destinoFinal,
+                  distancia: distanciaKm,
+                  tiempo_estimado: duracionMin,
+                  ruta: rutaGeo,
                   fecha_hora: fechaHora
                 })
               });
 
               const data = await res.json();
+              actualizarFormData({
+                id_solicitud: data.id_solicitud,
+                origen: origenFinal,
+                destino: destinoFinal,
+                distancia: distanciaKm,
+                tiempos_estimado: duracionMin,
+                ruta: rutaGeo,
+                hora: formData.hora,
+                fecha: formData.fecha
+              });
               if (!res.ok) {
                 alert(data.msg || 'Error al registrar mudanza');
                 return;
               }
 
-              const idSolicitud = data.id_solicitud;
-              
-              const rutas = {
-                  id_solicitud: idSolicitud,
-                  distancia_km: distanciaKm,
-                  duracion_min: duracionMin,
-                  ruta: rutaGeo
-                }
-              console.log(rutas);
-              nextStep();
             } catch (err) {
               console.error("Error al conectar con API:", err);
               alert("Error de red.");
             }
+            // Actualizar formData con la info generada
+  
+            console.log(formData);
+            nextStep();
           }}
           className="w-full bg-blue-500 text-white py-3 rounded-lg font-medium mt-6 hover:bg-blue-600 transition-colors"
         >

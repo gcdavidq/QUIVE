@@ -24,32 +24,6 @@ def create_tipo_objeto(data: dict):
     cursor.execute("SELECT * FROM Tipos_Objeto WHERE id_tipo=%s", (new_id,))
     return cursor.fetchone()
 
-def update_tipo_objeto(id_tipo: int, data: dict):
-    conn = get_db()
-    cursor = conn.cursor()
-    campos = []
-    valores = []
-    for campo in ["categoría", "variante", "descripcion", "volumen_estimado", "peso_estimado", "es_fragil", "necesita_embalaje", "imagen_url"]:
-        if campo in data:
-            campos.append(f"{campo}=%s")
-            valores.append(data[campo])
-    if not campos:
-        return {"error": "Nada para actualizar"}
-    valores.append(id_tipo)
-    sql = f"UPDATE Tipos_Objeto SET {', '.join(campos)} WHERE id_tipo=%s"
-    cursor.execute(sql, tuple(valores))
-    cursor.execute("SELECT * FROM Tipos_Objeto WHERE id_tipo=%s", (id_tipo,))
-    return cursor.fetchone()
-
-def delete_tipo_objeto(id_tipo: int):
-    conn = get_db()
-    cursor = conn.cursor()
-    # Verificar si hay referencias en Objetos_Solicitud
-    cursor.execute("SELECT id_objeto FROM Objetos_Solicitud WHERE id_tipo=%s", (id_tipo,))
-    if cursor.fetchone():
-        return {"error": "No se puede eliminar: hay objetos de solicitud referenciando este tipo"}
-    cursor.execute("DELETE FROM Tipos_Objeto WHERE id_tipo=%s", (id_tipo,))
-    return {"msg": "Tipo de objeto eliminado"}
 
 # --- Objetos dentro de una Solicitud ---
 def list_objetos_de_solicitud(id_solicitud: int):

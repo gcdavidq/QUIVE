@@ -67,7 +67,7 @@ const AppRoutes = () => {
         element={<RegistroExitosoScreen onNavigate={navigate} />}
       />
       <Route
-        path="/dashboard*"
+        path="/dashboard/*"
         element={
           <PrivateRoute userData={userData}>
             {

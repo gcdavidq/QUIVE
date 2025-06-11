@@ -6,7 +6,7 @@ import MetodosPago from './Perfilopcions/MetodosPago';
 import HistorialMudanzas from './Perfilopcions/HistorialMudanzas';
 import Configuracion from './Perfilopcions/Configuracion';
 import AyudaSoporte from './Perfilopcions/AyudaSoporte';
-import ImagenPerfil from '../utils/ImagenPerfil';
+import ImagenPerfil from '../utils/Imagen';
 
 
 const PerfilTab = ({ userData, onNavigate, setUserData}) => {

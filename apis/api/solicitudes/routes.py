@@ -26,7 +26,6 @@ def post_solicitud():
         data = schema.load(payload)
     except ValidationError as err:
         return jsonify({"errors": err.messages}), 400
-
     resultado = create_solcitud(data)
     return jsonify(resultado), 201
 

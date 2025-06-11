@@ -54,9 +54,9 @@ const RutaMap = ({ origen, destino, setRutaGeo, setDistanciaKm, setDuracionMin }
 
       const summary = data.routes[0].summary;
       setRuta(latlngs);
-      setRutaGeo(data.routes[0].geometry); // geometry compacta para guardar
-      setDistanciaKm((summary.distance / 1000).toFixed(2));
-      setDuracionMin((summary.duration / 60).toFixed(0));
+      setRutaGeo(JSON.stringify(latlngs)); // geometry compacta para guardar
+      setDistanciaKm((summary.distance).toFixed(2));
+      setDuracionMin((summary.duration).toFixed(0));
       setMostrarDistancia((summary.distance / 1000).toFixed(2));
       setMostrarDuracion((summary.duration / 60).toFixed(0));
 

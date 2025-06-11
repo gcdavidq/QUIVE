@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
-import ImagenPerfil from '../../utils/ImagenPerfil';
+import ImagenPerfil from '../../utils/Imagen';
 import UbicacionPeru from '../../Registerutils/address';
 import { useNavigate } from 'react-router-dom';
 import { parseUbicacion } from '../../../components/ubicacion';
@@ -76,7 +76,10 @@ const EditarPerfilScreen = ({ userData, setUserData}) => {
       }
 
       const usuario = data.usuario;
-      setUserData(usuario);// actualiza el estado global
+      setUserData(prev => ({
+        ...prev,
+        ...usuario
+      }));// actualiza el estado global
       navigate('..');
 
     } catch (error) {
