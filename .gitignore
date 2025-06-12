@@ -1,4 +1,9 @@
+.venv/
 
+
+# Python cache
+__pycache__/
+*.pyc
 # Node cache
 node_modules/
 .cache/
