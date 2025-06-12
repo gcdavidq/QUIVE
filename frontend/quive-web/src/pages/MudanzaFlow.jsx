@@ -92,6 +92,7 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
         <DetallesMudanza
           userData={userData}
           formData={formData}
+          setFormData={setFormData}
           actualizarFormData={actualizarFormData}
           nextStep={nextStep}
           validarPaso1={validarPaso1}

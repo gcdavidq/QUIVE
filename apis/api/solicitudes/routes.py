@@ -30,8 +30,8 @@ def post_solicitud():
     resultado = create_solcitud(data)
     return jsonify(resultado), 201
 
-@solicitudes_bp.route("/<int:id_solicitud>/elegido", methods=["PUT"])
-def put_solicitud_elegida(id_solicitud):
+@solicitudes_bp.route("/<int:id_solicitud>", methods=["PUT"])
+def put_solicitud(id_solicitud):
     payload = request.get_json()
     schema = CrearSolicitudSchema()
     try:
@@ -42,7 +42,7 @@ def put_solicitud_elegida(id_solicitud):
     return jsonify(resultado), 201
 
 @solicitudes_bp.route("/<int:id_solicitud>/elegido", methods=["PUT"])
-def put_solicitud(id_solicitud):
+def put_solicitud_elegida(id_solicitud):
     payload = request.get_json()
     schema = ActualizarSolicitudSchema(partial=True)
     try:

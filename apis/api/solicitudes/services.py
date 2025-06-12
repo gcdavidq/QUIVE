@@ -56,7 +56,7 @@ def actualizar_solicitud_completa(id_solicitud, data):
     ))
     conn.commit()
     return {
-        "id_solicitud": data["id_solicitud"]
+        "id_solicitud": id_solicitud
     }
 
 def update_solicitud(id_solicitud: int, data: dict):

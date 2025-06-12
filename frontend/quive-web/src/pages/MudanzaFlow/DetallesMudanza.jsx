@@ -38,13 +38,13 @@ const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, 
     const origenFormateado = formatearDireccion(origenDireccion);
     const destinoFormateado = formatearDireccion(destinoDireccion);
 
-    const fechaHoraActual = new Date(`${formData.fecha}T${formData.hora}`).toISOString().slice(0, 19);
-
     return (
       origenFormateado !== formData.origen ||
       destinoFormateado !== formData.destino ||
       distanciaKm !== formData.distancia ||
       duracionMin !== formData.tiempos_estimado ||
+      formData.fecha !== userData.formularioMudanza.fecha ||
+      formData.hora !== userData.formularioMudanza.hora ||
       JSON.stringify(rutaGeo) !== JSON.stringify(formData.ruta) ||
       !formData.id_solicitud // si no hay solicitud registrada aún, hay que crearla
     );
@@ -92,7 +92,7 @@ const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, 
                   type="date"
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   value={formData.fecha}
-                  onChange={(e) => actualizarFormData({ ...formData, fecha: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, fecha: e.target.value })}
                   min={new Date().toISOString().split('T')[0]}
                 />
               </div>
@@ -108,7 +108,7 @@ const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, 
                   type="time"
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   value={formData.hora}
-                  onChange={(e) => actualizarFormData({ ...formData, hora: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, hora: e.target.value })}
                 />
               </div>
             </div>
@@ -135,32 +135,48 @@ const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, 
             }
 
             try {
-              const res = await fetch('http://127.0.0.1:5000/solicitudes', {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  id_usuario: userData.id_usuario,
-                  origen: origenFinal,
-                  destino: destinoFinal,
-                  distancia: distanciaKm,
-                  tiempo_estimado: duracionMin,
-                  ruta: rutaGeo,
-                  fecha_hora: fechaHora
-                })
-              });
+              const payload = {
+                id_usuario: userData.id_usuario,
+                origen: origenFinal,
+                destino: destinoFinal,
+                distancia: distanciaKm,
+                tiempo_estimado: duracionMin,
+                ruta: rutaGeo,
+                fecha_hora: fechaHora
+              };
+
+              let res;
+              if (formData.id_solicitud) {
+                // PUT si ya hay solicitud existente
+                res = await fetch(`http://127.0.0.1:5000/solicitudes/${formData.id_solicitud}`, {
+                  method: "PUT",
+                  credentials: "include",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify(payload)
+                });
+              } else {
+                // POST si es nueva solicitud
+                res = await fetch('http://127.0.0.1:5000/solicitudes', {
+                  method: "POST",
+                  credentials: "include",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify(payload)
+                });
+              }
 
               const data = await res.json();
 
               if (!res.ok) {
-                alert(data.msg || 'Error al registrar mudanza');
+                alert(data.msg || 'Error al procesar mudanza');
                 return;
               }
 
               actualizarFormData({
-                id_solicitud: data.id_solicitud,
+                id_solicitud: data.id_solicitud || formData.id_solicitud,
                 origen: origenFinal,
                 destino: destinoFinal,
                 distancia: distanciaKm,
