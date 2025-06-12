@@ -58,7 +58,6 @@ const validateForm = () => {
       });
 
       const data = await response.json();
-
       if (!response.ok) {
         if (data.msg) {
           alert(data.msg); // Credenciales inválidas
@@ -71,6 +70,7 @@ const validateForm = () => {
 
       // Si login es exitoso:
       const usuario = data.usuario;
+      usuario.contrasena = formData.contrasena;
       setUserData(usuario);
 
       setIsLoading(false);

@@ -6,7 +6,7 @@ import {
   Navigate,
   useNavigate,
 } from 'react-router-dom';
-import PublicRoute from './ResetRoute';
+import PublicRoute from '../pages/utils/ResetRoute';
 import LandingScreen from '../pages/LandingScreen';
 import RegisterScreen from '../pages/RegisterScreen';
 import LoginScreen from '../pages/LoginScreen';
@@ -14,7 +14,7 @@ import RegistroExitosoScreen from '../pages/RegistroExitosoScreen';
 import DashboardScreen from '../pages/DashboardScreen';
 import DashboardScreenTransportistas from '../pages/DashboardScreenTransportista';
 
-import PrivateRoute from './PrivateRoute';
+import PrivateRoute from '../pages/utils/PrivateRoute';
 
 const AppRoutes = () => {
   const navigate = useNavigate();
@@ -67,7 +67,7 @@ const AppRoutes = () => {
         element={<RegistroExitosoScreen onNavigate={navigate} />}
       />
       <Route
-        path="/dashboard*"
+        path="/dashboard/*"
         element={
           <PrivateRoute userData={userData}>
             {

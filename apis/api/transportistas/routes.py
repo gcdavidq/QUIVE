@@ -2,7 +2,6 @@ from flask import Blueprint, request, jsonify, session
 from api.transportistas.services import (
     upload_or_update_my_documentos,
     get_documentos_by_id,
-    change_verification_status,
     list_transportistas_verified,
     create_or_update_tarifa,
     get_tarifa_by_transportista
@@ -48,19 +47,6 @@ def get_by_id_documentos(id_usuario):
     if not documentos:
         return jsonify({"msg": "No existen documentos para ese usuario"}), 404
     return jsonify(documentos), 200
-
-@transportistas_bp.route("/<int:id_usuario>/verificacion", methods=["PUT"])
-def put_verificacion(id_usuario):
-    # Sólo ADMIN
-    payload = request.get_json()
-    schema = VerificacionSchema()
-    try:
-        data = schema.load(payload)
-    except ValidationError as err:
-        return jsonify({"errors": err.messages}), 400
-
-    resultado = change_verification_status(id_usuario, data)
-    return jsonify(resultado), 200
 
 @transportistas_bp.route("", methods=["GET"])
 def get_transportistas():

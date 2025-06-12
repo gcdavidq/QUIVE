@@ -79,6 +79,7 @@ const DashboardScreen = ({ userData, onNavigate, userType, setUserData}) => {
             element={
               <MudanzaFlow
                 userData={userData}
+                setUserData={setUserData}
                 onNavigate={onNavigate}
                 setActiveTab={handleTabChange}
               />

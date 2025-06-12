@@ -4,6 +4,7 @@ import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import UbicacionPeru from "./Registerutils/address";
 import SubidaDocumentos from './Registerutils/documentos';
 import TarifasForm from './Registerutils/tarifas';
+import SubirImagen from './utils/SubirImagen'
 
 
 const RegisterScreen = ({onNavigate, userType, setUserType}) => {
@@ -42,14 +43,6 @@ const RegisterScreen = ({onNavigate, userType, setUserType}) => {
   });
 
   const [fotoPerfil, setFotoPerfil] = useState(null);
-  const [preview, setPreview] = useState(null);
-  const handleFotoPerfilChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFotoPerfil(file);
-      setPreview(URL.createObjectURL(file));
-    }
-  };
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -274,27 +267,12 @@ const RegisterScreen = ({onNavigate, userType, setUserType}) => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex justify-center mb-6">
-              <div className="relative">
-                <label htmlFor="fotoPerfil" className="cursor-pointer">
-                  <img
-                    src={
-                      preview ||
-                      "https://www.w3schools.com/howto/img_avatar.png" // avatar elegante
-                    }
-                    alt="Foto de perfil"
-                    className="w-28 h-28 rounded-full object-cover border-4 border-blue-300 shadow-md bg-white"
-                  />
-                </label>
-                <input
-                  id="fotoPerfil"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFotoPerfilChange}
-                  className="hidden"
-                />
-              </div>
-            </div>
+            <SubirImagen
+              defaultPreview={null}
+              onFotoSeleccionada={(file) => setFotoPerfil(file)}
+              id_imagen={"fotoPerfil"}
+              imgClassName="w-28 h-28 rounded-full object-cover border-4 border-blue-300 shadow-md bg-white"
+            />
 
             <div>
               <input

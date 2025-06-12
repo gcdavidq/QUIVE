@@ -24,7 +24,11 @@ def get_access_token(refresh_token, app_key, app_secret):
         raise Exception("Error obteniendo access token: " + response.text)
 
 def subir_a_dropbox(file: BinaryIO, nombre_destino: str):
-    TOKEN = get_access_token(refresh_token='UToFxa2itbkAAAAAAAAAATyp6OE1TLirLtNomCTAPf41iz3WJpKF1Ota4x5fp6K4', app_key='sk2ijo2e9u12dbk', app_secret='rnm0outftw8l3wh')
+    TOKEN = get_access_token(
+        refresh_token='UToFxa2itbkAAAAAAAAAATyp6OE1TLirLtNomCTAPf41iz3WJpKF1Ota4x5fp6K4',
+        app_key='sk2ijo2e9u12dbk',
+        app_secret='rnm0outftw8l3wh'
+    )
     dbx = dropbox.Dropbox(TOKEN)
     """
     Sube un archivo a Dropbox.
@@ -48,8 +52,13 @@ def subir_a_dropbox(file: BinaryIO, nombre_destino: str):
             else:
                 raise e  # Re-lanzar si el error es otro
 
-        # Convertir a enlace "raw" para mostrar la imagen directamente
-        url_publica = shared_link_metadata.url.replace("?dl=0", "?raw=1")
+        # Convertir la URL a una versión directa (raw) tipo: dl.dropboxusercontent.com/s/...
+        url_publica = (
+            shared_link_metadata.url
+            .replace("www.dropbox.com", "dl.dropboxusercontent.com")
+            .replace("?dl=0", "")
+        )
+
         print("Nombre final:", res.name)
         print("Ruta final:", url_publica)
         return url_publica

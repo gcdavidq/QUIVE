@@ -10,14 +10,16 @@ auth_bp = Blueprint("auth_bp", __name__)
 def register():
     payload = request.form.to_dict()
     schema = RegisterSchema()
+    print(payload)
     try:
         if request.files.get("foto_perfil_url") is not None:
             file = request.files.get("foto_perfil_url")
             id_file = subir_a_dropbox(file, f"/{file.filename}")
             payload["foto_perfil_url"] = id_file  # o la ruta final
+        elif request.form.get("foto_perfil_url"):
+            payload["foto_perfil_url"] = request.form.get("foto_perfil_url")
         else:
-            payload["foto_perfil_url"] = 'https://www.dropbox.com/scl/fi/b4ttqjb0f6on9v4dxixwq/satoru-gojo-de-jujutsu-kaisen_3840x2160_xtrafondos.com.jpg?rlkey=j9xq97kkqcxdsojldqxnvbeha&dl=0'
-        print(payload)
+            payload["foto_perfil_url"] = 'https://dl.dropboxusercontent.com/scl/fi/b4ttqjb0f6on9v4dxixwq/satoru-gojo-de-jujutsu-kaisen_3840x2160_xtrafondos.com.jpg?rlkey=j9xq97kkqcxdsojldqxnvbeha'
         data = schema.load(payload)
         print(data)
 
@@ -39,7 +41,6 @@ def login():
         return jsonify({"errors": err.messages}), 400
 
     result = login_user(data)
-    print(result)
     if "error" in result:
         return jsonify({"msg": result["error"]}), 401
     result.pop("contrasena_hash", None)

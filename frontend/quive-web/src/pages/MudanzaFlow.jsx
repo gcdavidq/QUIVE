@@ -8,21 +8,33 @@ import ListaConductores from './MudanzaFlow/ListaConductores';
 import MetodosPago from './MudanzaFlow/MetodosPago';
 import { ArrowLeft } from 'lucide-react';
 
-const MudanzaFlow = ({ userData, onNavigate, setActiveTab }) => {
+const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
   const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState({
+  const initialFormData = {
+    id_solicitud: '',
     origen: '',
     destino: '',
     fecha: '',
     hora: '',
+    ruta: '',
+    distancia: '',
+    tiempos_estimado: '',
     objetos: [],
     conductor: null,
-    notas: ''
-  });
+    notas: '',
+    ...(userData?.formularioMudanza || {})  // ← Sobrescribe con datos existentes si hay
+  };
+  const [formData, setFormData] = useState(initialFormData);
+  const actualizarFormData = (cambios) => {
+    const nuevo = { ...formData, ...cambios };
+    setFormData(nuevo);
+    setUserData((prev) => ({
+      ...prev,
+      formularioMudanza: cambios,
+    }));
+  };
 
-  const [nuevoObjeto, setNuevoObjeto] = useState({
-    tipo: 'Cocina', cantidad: 1, descripcion: '', altura: '', ancho: '', profundidad: '', fragil: false
-  });
+  const [nuevoObjeto, setNuevoObjeto] = useState({});
 
   const nextStep = () => currentStep < 5 && setCurrentStep(currentStep + 1);
   const prevStep = () => currentStep > 1 && setCurrentStep(currentStep - 1);
@@ -35,9 +47,11 @@ const MudanzaFlow = ({ userData, onNavigate, setActiveTab }) => {
   };
 
   const agregarObjeto = () => {
-    if (!nuevoObjeto.descripcion.trim()) return alert('Ingrese una descripción');
+    if (!nuevoObjeto.cantidad?.toString().trim() || !nuevoObjeto.variante?.toString().trim()) {
+  return alert('Ingresa todos los campos');
+}
     setFormData({ ...formData, objetos: [...formData.objetos, { ...nuevoObjeto, id: Date.now() }] });
-    setNuevoObjeto({ tipo: 'Cocina', cantidad: 1, descripcion: '', altura: '', ancho: '', profundidad: '', fragil: false });
+    setNuevoObjeto({});
   };
 
   const eliminarObjeto = id => setFormData({ ...formData, objetos: formData.objetos.filter(obj => obj.id !== id) });
@@ -79,6 +93,7 @@ const MudanzaFlow = ({ userData, onNavigate, setActiveTab }) => {
           userData={userData}
           formData={formData}
           setFormData={setFormData}
+          actualizarFormData={actualizarFormData}
           nextStep={nextStep}
           validarPaso1={validarPaso1}
         />
