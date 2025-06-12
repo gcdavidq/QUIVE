@@ -1,0 +1,5 @@
+
+# Node cache
+node_modules/
+.cache/
+*.pack
