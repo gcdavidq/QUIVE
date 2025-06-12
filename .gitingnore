@@ -1,1 +1,10 @@
 .venv/
+
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Node.js cache
+node_modules/
+.cache/
