@@ -71,7 +71,7 @@ const AppRoutes = () => {
         element={
           <PrivateRoute userData={userData}>
             {
-              userData?.userType === 'transportista' ? (
+              userData?.tipo_usuario === 'transportista' ? (
                 <DashboardScreenTransportistas
                   userData={userData}
                   setUserData={setUserData}

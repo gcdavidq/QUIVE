@@ -5,52 +5,67 @@ import RutaMap from '../utils/RutaMap';
 import { parseUbicacion } from '../utils/ubicacion';
 
 const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, nextStep }) => {
+  // ──────────────── Hooks inside component ────────────────
+  const [errors, setErrors] = useState({});
   const [origenDireccion, setOrigenDireccion] = useState(() => {
     if (formData.origen) return parseUbicacion(formData.origen);
     if (userData.Ubicacion) return parseUbicacion(userData.Ubicacion);
     return {};
   });
-
   const [destinoDireccion, setDestinoDireccion] = useState(() => {
     if (formData.destino) return parseUbicacion(formData.destino);
     return {};
   });
-
   const [distanciaKm, setDistanciaKm] = useState(formData.distancia || null);
   const [duracionMin, setDuracionMin] = useState(formData.tiempos_estimado || null);
   const [rutaGeo, setRutaGeo] = useState(formData.ruta || null);
-  
 
-  const validarPaso1 = () => {
-    if (!formData.fecha.trim() || !formData.hora.trim()) {
-      alert('Por favor, complete todos los campos requeridos');
-      return false;
+  // ──────────────── Validation helpers ────────────────
+  const cleanError = (fieldname) => {
+    if (errors[fieldname]) {
+      setErrors(prev => ({ ...prev, [fieldname]: '' }));
     }
-    return true;
   };
 
-  const formatearDireccion = (direccionObj) => {
-    const { departamento, provincia, distrito, tipoVia, nombreVia, numero, lat, lng } = direccionObj;
+  const validateDetalles = () => {
+    const newErrors = {};
+    if (!origenDireccion.lat || !origenDireccion.lng) {
+      newErrors.origen = 'Debe seleccionar una dirección de origen válida';
+    }
+    if (!destinoDireccion.lat || !destinoDireccion.lng) {
+      newErrors.destino = 'Debe seleccionar una dirección de destino válida';
+    }
+    if (!formData.fecha.trim()) {
+      newErrors.fecha = 'La fecha es requerida';
+    }
+    if (!formData.hora.trim()) {
+      newErrors.hora = 'La hora es requerida';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const formatearDireccion = (d) => {
+    const { departamento, provincia, distrito, tipoVia, nombreVia, numero, lat, lng } = d;
     return `${tipoVia} ${nombreVia} ${numero}, ${distrito}, ${provincia}, ${departamento}, Peru; ${lat}, ${lng}`;
   };
 
   const huboCambios = () => {
-    const origenFormateado = formatearDireccion(origenDireccion);
-    const destinoFormateado = formatearDireccion(destinoDireccion);
-
+    const o = formatearDireccion(origenDireccion);
+    const dest = formatearDireccion(destinoDireccion);
     return (
-      origenFormateado !== formData.origen ||
-      destinoFormateado !== formData.destino ||
+      o !== formData.origen ||
+      dest !== formData.destino ||
       distanciaKm !== formData.distancia ||
       duracionMin !== formData.tiempos_estimado ||
       formData.fecha !== userData.formularioMudanza.fecha ||
       formData.hora !== userData.formularioMudanza.hora ||
       JSON.stringify(rutaGeo) !== JSON.stringify(formData.ruta) ||
-      !formData.id_solicitud // si no hay solicitud registrada aún, hay que crearla
+      !formData.id_solicitud
     );
   };
 
-
+  // ──────────────── Render ────────────────
   return (
     <div className="p-6">
       <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
@@ -61,14 +76,24 @@ const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, 
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Dirección de Origen <span className="text-red-500">*</span>
             </label>
-            <UbicacionPeru direccion={origenDireccion} setUbicacion={setOrigenDireccion} titulo="Dirección de Origen" />
+            <UbicacionPeru
+              direccion={origenDireccion}
+              setUbicacion={(dir) => { cleanError('origen'); setOrigenDireccion(dir); }}
+              titulo="Dirección de Origen"
+            />
+            {errors.origen && <p className="text-red-500 text-sm">{errors.origen}</p>}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Dirección de Destino <span className="text-red-500">*</span>
             </label>
-            <UbicacionPeru direccion={destinoDireccion} setUbicacion={setDestinoDireccion} titulo="Dirección de Destino" />
+            <UbicacionPeru
+              direccion={destinoDireccion}
+              setUbicacion={(dir) => { cleanError('destino'); setDestinoDireccion(dir); }}
+              titulo="Dirección de Destino"
+            />
+            {errors.destino && <p className="text-red-500 text-sm">{errors.destino}</p>}
           </div>
 
           {origenDireccion.lat && destinoDireccion.lat && (
@@ -90,12 +115,13 @@ const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, 
                 <Calendar className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                 <input
                   type="date"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors"
                   value={formData.fecha}
-                  onChange={(e) => setFormData({ ...formData, fecha: e.target.value })}
+                  onChange={(e) => { cleanError('fecha'); setFormData({ ...formData, fecha: e.target.value }); }}
                   min={new Date().toISOString().split('T')[0]}
                 />
               </div>
+              {errors.fecha && <p className="text-red-500 text-sm">{errors.fecha}</p>}
             </div>
 
             <div>
@@ -106,34 +132,41 @@ const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, 
                 <Clock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                 <input
                   type="time"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors"
                   value={formData.hora}
-                  onChange={(e) => setFormData({ ...formData, hora: e.target.value })}
+                  onChange={(e) => { cleanError('hora'); setFormData({ ...formData, hora: e.target.value }); }}
                 />
               </div>
+              {errors.hora && <p className="text-red-500 text-sm">{errors.hora}</p>}
             </div>
           </div>
         </div>
 
         <button
           onClick={async () => {
-            if (!validarPaso1()) return;
+            // 1) Validar formulario
+            if (!validateDetalles()) return;
 
+            // 2) Revisar rutas y direcciones
             if (!origenDireccion.lat || !destinoDireccion.lat || !rutaGeo) {
-              alert("Por favor, asegúrate de haber seleccionado ambas direcciones y que se haya cargado la ruta.");
+              alert('Por favor, asegúrate de haber seleccionado ambas direcciones y que se haya cargado la ruta.');
               return;
             }
 
+            // 3) Preparar payload
             const origenFinal = formatearDireccion(origenDireccion);
             const destinoFinal = formatearDireccion(destinoDireccion);
-            const fechaHora = new Date(`${formData.fecha}T${formData.hora}`).toISOString().slice(0, 19);
+            const fechaHora = new Date(`${formData.fecha}T${formData.hora}`)
+              .toISOString()
+              .slice(0, 19);
 
+            // 4) Saltar si no hay cambios
             if (!huboCambios()) {
-              console.log("No hubo cambios, se omite llamada a API.");
               nextStep();
               return;
             }
 
+            // 5) Llamada a tu API
             try {
               const payload = {
                 id_usuario: userData.id_usuario,
@@ -142,34 +175,22 @@ const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, 
                 distancia: distanciaKm,
                 tiempo_estimado: duracionMin,
                 ruta: rutaGeo,
-                fecha_hora: fechaHora
+                fecha_hora: fechaHora,
               };
 
-              let res;
-              if (formData.id_solicitud) {
-                // PUT si ya hay solicitud existente
-                res = await fetch(`http://127.0.0.1:5000/solicitudes/${formData.id_solicitud}`, {
-                  method: "PUT",
-                  credentials: "include",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify(payload)
-                });
-              } else {
-                // POST si es nueva solicitud
-                res = await fetch('http://127.0.0.1:5000/solicitudes', {
-                  method: "POST",
-                  credentials: "include",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify(payload)
-                });
-              }
+              const res = await fetch(
+                formData.id_solicitud
+                  ? `http://127.0.0.1:5000/solicitudes/${formData.id_solicitud}`
+                  : 'http://127.0.0.1:5000/solicitudes',
+                {
+                  method: formData.id_solicitud ? 'PUT' : 'POST',
+                  credentials: 'include',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(payload),
+                }
+              );
 
               const data = await res.json();
-
               if (!res.ok) {
                 alert(data.msg || 'Error al procesar mudanza');
                 return;
@@ -183,14 +204,12 @@ const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, 
                 tiempos_estimado: duracionMin,
                 ruta: rutaGeo,
                 hora: formData.hora,
-                fecha: formData.fecha
+                fecha: formData.fecha,
               });
-
               nextStep();
-
             } catch (err) {
-              console.error("Error al conectar con API:", err);
-              alert("Error de red.");
+              console.error('Error al conectar con API:', err);
+              alert('Error de red.');
             }
           }}
           className="w-full bg-blue-500 text-white py-3 rounded-lg font-medium mt-6 hover:bg-blue-600 transition-colors"

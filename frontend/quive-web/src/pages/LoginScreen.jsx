@@ -1,13 +1,70 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { GoogleLogin } from '@react-oauth/google';
-
 
 const LoginScreen = ({ onNavigate, setUserData }) => {
   const [formData, setFormData] = useState({ identificador: '', password: '' });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
 
+  // Carga e inicializa el SDK de Google
+  useEffect(() => {
+    const loadGoogleScript = () => {
+      if (window.google?.accounts) {
+        initializeGoogleAuth();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.onload = initializeGoogleAuth;
+      script.onerror = () => console.error('Error loading Google script');
+      document.head.appendChild(script);
+    };
+
+    const initializeGoogleAuth = () => {
+      if (!window.google?.accounts) return;
+      window.google.accounts.id.initialize({
+        client_id: "273165541469-spobn0clm5tj7f68116fg8lutk0n4j4u.apps.googleusercontent.com",
+        callback: handleGoogleResponse,
+        ux_mode: 'popup',
+        cancel_on_tap_outside: true,
+      });
+      window.google.accounts.id.renderButton(
+        document.getElementById('google-signin-button'),
+        { theme: 'outline', size: 'large', width: 300, locale: 'es' }
+      );
+    };
+
+    loadGoogleScript();
+  }, []);
+
+  // Maneja la respuesta de Google
+  const handleGoogleResponse = async (response) => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('http://localhost:5000/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: response.credential }),
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        setUserData(data.usuario);
+        window.google.accounts.id.disableAutoSelect();
+        onNavigate('dashboard');
+      } else {
+        alert('Error al iniciar sesión con Google');
+      }
+    } catch (error) {
+      console.error('Error de conexión con el servidor:', error);
+      alert('Error de conexión con el servidor');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Manejo de inputs y validación
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -35,32 +92,31 @@ const LoginScreen = ({ onNavigate, setUserData }) => {
     if (!validateForm()) return;
 
     setIsLoading(true);
-
     try {
-      const response = await fetch("http://127.0.0.1:5000/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('http://127.0.0.1:5000/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: formData.identificador,
           dni: formData.identificador,
-          contrasena: formData.password
-        })
+          contrasena: formData.password,
+        }),
       });
-
       const data = await response.json();
 
       if (!response.ok) {
-        alert(data.msg || "Error inesperado al iniciar sesión.");
-        setIsLoading(false);
+        alert(data.msg || 'Error inesperado al iniciar sesión.');
         return;
       }
 
+      
       setUserData(data.usuario);
-      setIsLoading(false);
-      onNavigate("dashboard");
+      onNavigate('dashboard');
+      
     } catch (error) {
-      console.error("Error de conexión:", error);
-      alert("Error de red o servidor.");
+      console.error('Error de conexión:', error);
+      alert('Error de red o servidor.');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -68,7 +124,7 @@ const LoginScreen = ({ onNavigate, setUserData }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <header className="bg-white shadow-sm p-6 flex items-center">
-        <button 
+        <button
           onClick={() => onNavigate('landing')}
           className="mr-4 p-2 text-gray-600 hover:text-blue-600 transition-colors"
         >
@@ -84,34 +140,10 @@ const LoginScreen = ({ onNavigate, setUserData }) => {
             <h1 className="text-3xl font-bold text-blue-600 mb-6">INICIAR SESIÓN</h1>
           </div>
 
-          <GoogleLogin
-            onSuccess={credentialResponse => {
-              const token = credentialResponse.credential;
-              fetch('http://localhost:5000/auth/google', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token })
-              })
-              .then(res => res.json())
-              .then(data => {
-                console.log('Respuesta backend:', data);
-                if (data.status === 'success') {
-                  setUserData(data);
-                  onNavigate('dashboard');
-                }else{
-                  alert('Error al iniciar sesión con Google: ');
-                }
-                // guardar token / navegar al dashboard
-              });
-            }}
-            onError={() => {
-              console.log('Falló inicio de sesión con Google');
-            }}
-          />
+          {/* Botón de Google Sign-In */}
+          <div id="google-signin-button" className="flex justify-center mb-6"></div>
 
-          <div className="text-center text-gray-500 my-6">
-            <span>o</span>
-          </div>
+          <div className="text-center text-gray-500 mb-6"><span>o</span></div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -128,7 +160,9 @@ const LoginScreen = ({ onNavigate, setUserData }) => {
                   errors.identificador ? 'border-red-500' : 'border-gray-200'
                 }`}
               />
-              {errors.identificador && <p className="text-red-500 text-sm mt-1">{errors.identificador}</p>}
+              {errors.identificador && (
+                <p className="text-red-500 text-sm mt-1">{errors.identificador}</p>
+              )}
             </div>
 
             <div>
@@ -145,11 +179,16 @@ const LoginScreen = ({ onNavigate, setUserData }) => {
                   errors.password ? 'border-red-500' : 'border-gray-200'
                 }`}
               />
-              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+              {errors.password && (
+                <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+              )}
             </div>
 
             <div className="text-right">
-              <button type="button" className="text-blue-600 hover:text-blue-800 text-sm transition-colors">
+              <button
+                type="button"
+                className="text-blue-600 hover:text-blue-800 text-sm transition-colors"
+              >
                 ¿Olvidaste tu contraseña?
               </button>
             </div>
