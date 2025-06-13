@@ -2,27 +2,6 @@ import React, { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 
-<GoogleLogin
-  onSuccess={credentialResponse => {
-    const token = credentialResponse.credential;
-    // Enviar token al backend
-    fetch('http://localhost:5000/auth/google', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token }),
-      mode: 'cors' 
-
-    })
-    .then(res => res.json())
-    .then(data => {
-      console.log('Respuesta backend:', data);
-      // guardar token propio / navegar al dashboard
-    });
-  }}
-  onError={() => {
-    console.log('Falló inicio de sesión con Google');
-  }}
-  />
 
 const LoginScreen = ({ onNavigate, setUserData }) => {
   const [formData, setFormData] = useState({ identificador: '', password: '' });
@@ -116,6 +95,12 @@ const LoginScreen = ({ onNavigate, setUserData }) => {
               .then(res => res.json())
               .then(data => {
                 console.log('Respuesta backend:', data);
+                if (data.status === 'success') {
+                  setUserData(data);
+                  onNavigate('dashboard');
+                }else{
+                  alert('Error al iniciar sesión con Google: ');
+                }
                 // guardar token / navegar al dashboard
               });
             }}

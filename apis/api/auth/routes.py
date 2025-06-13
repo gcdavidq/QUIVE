@@ -46,6 +46,29 @@ def login():
     result.pop("contrasena_hash", None)
     return jsonify(result), 200
 
+
+@auth_bp.route("/google", methods=["POST"])
+def google_login():
+    try:
+        payload = request.get_json()
+        token = payload.get('token')
+
+        # Aquí deberías verificar el token con Google
+        # y crear/buscar el usuario en tu base de datos
+
+        # Por ahora, retorna un ejemplo
+        return jsonify({
+            "status": "success",
+            "usuario": {
+                "id": 1,
+                "nombre": "Usuario Google",
+                "email": "user@gmail.com"
+            }
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
 @auth_bp.route("/logout", methods=["POST"])
 def logout():
     session.clear()
