@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Star } from 'lucide-react';
 
-const SeleccionConductor = ({ nextStep, seleccionarConductor, setCurrentStep, formData }) => {
+const SeleccionConductor = ({ nextStep, seleccionarConductor, formData }) => {
   const [conductorRecomendado, setConductorRecomendado] = useState(null);
   useEffect(() => {
     const fetchConductor = async () => {
@@ -47,7 +47,7 @@ const SeleccionConductor = ({ nextStep, seleccionarConductor, setCurrentStep, fo
           <p className="text-gray-600 mb-6">Puedes seleccionar un conductor tú mismo.</p>
 
           <button
-            onClick={nextStep}
+            onClick={() => {nextStep(4);}}
             className="bg-orange-500 text-white px-8 py-3 rounded-lg font-medium hover:bg-orange-600 transition-colors"
           >
             BUSCAR MANUALMENTE
@@ -64,16 +64,24 @@ const SeleccionConductor = ({ nextStep, seleccionarConductor, setCurrentStep, fo
 
             <h4 className="text-xl font-bold text-blue-900 mb-2">{conductorRecomendado.nombre}</h4>
             <div className="flex items-center justify-center mb-2">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star 
-                  key={star} 
-                  className={`w-4 h-4 ${
-                    star <= Math.floor(conductorRecomendado.rating) 
-                      ? 'fill-yellow-400 text-yellow-400' 
-                      : 'text-gray-300'
-                  }`} 
-                />
-              ))}
+              {[1, 2, 3, 4, 5].map((star) => {
+                const fillPercentage = Math.min(Math.max(conductorRecomendado.rating - star + 1, 0), 1) * 100;
+
+                return (
+                  <div key={star} className="relative w-4 h-4">
+                    {/* Estrella vacía de fondo */}
+                    <Star className="w-4 h-4 text-gray-300" />
+
+                    {/* Estrella amarilla parcial encima */}
+                    <div
+                      className="absolute top-0 left-0 h-full overflow-hidden"
+                      style={{ width: `${fillPercentage}%` }}
+                    >
+                      <Star className="w-4 h-4 text-yellow-400" />
+                    </div>
+                  </div>
+                );
+              })}
               <span className="ml-2 text-sm text-gray-600">({conductorRecomendado.reviews})</span>
             </div>
 
@@ -105,7 +113,7 @@ const SeleccionConductor = ({ nextStep, seleccionarConductor, setCurrentStep, fo
           <button
             onClick={() => {
               seleccionarConductor(conductorRecomendado);
-              setCurrentStep(5); // Saltar directamente a pago
+              nextStep();
             }}
             className="w-full bg-blue-500 text-white py-3 rounded-lg font-medium hover:bg-blue-600 transition-colors"
           >

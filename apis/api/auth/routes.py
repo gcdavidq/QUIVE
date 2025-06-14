@@ -73,6 +73,7 @@ def verify_google_token(token):
             'foto_perfil': idinfo.get('picture', '')
         }
     except ValueError as e:
+        print(e)
         return None
 
 
@@ -134,7 +135,7 @@ def create_or_get_google_user(google_data):
             google_data['foto_perfil'],
             'cliente',  # tipo por defecto
             'activo',  # estado por defecto
-            '',  # DNI vacío - deberá completarlo
+            None,  # DNI vacío - deberá completarlo
             '',  # Teléfono vacío - deberá completarlo
             '',  # Ubicación vacía - deberá completarla
             None  # Sin contraseña - solo acceso vía Google
