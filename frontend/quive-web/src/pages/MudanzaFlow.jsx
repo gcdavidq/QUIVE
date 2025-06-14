@@ -30,7 +30,7 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
     setFormData(nuevo);
     setUserData((prev) => ({
       ...prev,
-      formularioMudanza: cambios,
+      formularioMudanza: nuevo,
     }));
   };
 
@@ -106,6 +106,8 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
           agregarObjeto={agregarObjeto}
           eliminarObjeto={eliminarObjeto}
           nextStep={nextStep}
+          actualzarFormData={actualizarFormData}
+          userData={userData}
         />
       )}
       {currentStep === 3 && (

@@ -77,27 +77,16 @@ def get_objeto_by_id(id_objeto: int):
     cursor.execute(sql, (id_objeto,))
     return cursor.fetchone()
 
-def update_objeto_de_solicitud(id_solicitud: int, id_objeto: int, data: dict):
+def delete_objetos_de_solicitud(id_solicitud: int):
     conn = get_db()
     cursor = conn.cursor()
-    # (Opcional) Revisar que la solicitud esté en estado “en espera”
-    campos = []
-    valores = []
-    for campo in ["cantidad", "observaciones", "imagen_url"]:
-        if campo in data:
-            campos.append(f"{campo}=%s")
-            valores.append(data[campo])
-    if not campos:
-        return {"error": "Nada para actualizar"}
-    valores.extend([id_solicitud, id_objeto])
-    sql = f"UPDATE Objetos_Solicitud SET {', '.join(campos)} WHERE id_solicitud=%s AND id_objeto=%s"
-    cursor.execute(sql, tuple(valores))
-    return get_objeto_by_id(id_objeto)
 
-def delete_objeto_de_solicitud(id_solicitud: int, id_objeto: int):
-    conn = get_db()
-    cursor = conn.cursor()
-    # (Opcional) Revisar que la solicitud esté en estado “en espera”
-    sql = "DELETE FROM Objetos_Solicitud WHERE id_solicitud=%s AND id_objeto=%s"
-    cursor.execute(sql, (id_solicitud, id_objeto))
-    return {"msg": "Objeto eliminado de la solicitud"}
+    sql = """
+        DELETE FROM Objetos_Solicitud
+        WHERE id_solicitud = %s
+    """
+
+    cursor.execute(sql, (id_solicitud,))
+    conn.commit()
+
+    return cursor.rowcount

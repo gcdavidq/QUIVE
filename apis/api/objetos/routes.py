@@ -4,8 +4,7 @@ from api.objetos.services import (
     create_tipo_objeto,
     list_objetos_de_solicitud,
     add_objetos_a_solicitud,
-    update_objeto_de_solicitud,
-    delete_objeto_de_solicitud
+    delete_objetos_de_solicitud
 )
 from api.objetos.schemas import TipoObjetoSchema, AddObjetoASolicitudSchema
 from utils.quickstart import subir_a_dropbox
@@ -59,7 +58,10 @@ def post_objetos_solicitud(id_solicitud):
             "imagen_url": imagen_url,
         })
         i += 1
-
+    try:
+        delete_objetos_de_solicitud(id_solicitud)
+    except Exception as e:
+        return jsonify({"msg": f"Error al eliminar objetos anteriores: {str(e)}"}), 500
     # Paso 2: función para procesar cada objeto
     def procesar_objeto(obj):
         if obj["imagen_file"]:

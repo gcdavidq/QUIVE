@@ -11,12 +11,13 @@ const CaracteristicasObjetos = ({
   setNuevoObjeto,
   agregarObjeto,
   eliminarObjeto,
-  nextStep
+  nextStep,
+  actualzarFormData,
+  userData
 }) => {
   const [tiposObjetos, setTiposObjetos] = useState([]);
   const [categoriasDisponibles, setCategoriasDisponibles] = useState([]);
   const [variantesFiltradas, setVariantesFiltradas] = useState([]);
-  const [archivoImagen, setArchivoImagen] = useState(null);
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -111,6 +112,7 @@ const CaracteristicasObjetos = ({
     setNuevoObjeto({
       ...nuevoObjeto,
       variante: varianteSeleccionada,
+      cantidad: 1,
       id_tipo: objeto.id_tipo,
       descripcion: objeto.descripcion,
       volumen: objeto.volumen_estimado,
@@ -120,7 +122,7 @@ const CaracteristicasObjetos = ({
       profundidad: objeto.largo,
       fragil: objeto.es_fragil,
       embalaje: objeto.necesita_embalaje,
-      imagen_url: objeto.imagen_url,
+      imagen_url: objeto.imagen_url || 'https://dl.dropboxusercontent.com/scl/fi/07bltx6seeua4hdu0jrwi/istockphoto-1409329028-612x612.jpg?rlkey=hp8ixqvgblc4hzod1dnux3u3e&st=ilprcbvq',
     });
   };
 
@@ -141,7 +143,6 @@ const CaracteristicasObjetos = ({
 
   const handleImagenSeleccionada = (file) => {
     const nuevaURL = URL.createObjectURL(file);
-    setArchivoImagen(file);
     setNuevoObjeto((prev) => ({
       ...prev,
       imagen_url: nuevaURL,
@@ -149,8 +150,28 @@ const CaracteristicasObjetos = ({
     }));
   };
 
+  const objetosIguales = (arr1 = [], arr2 = []) => {
+    if (arr1.length !== arr2.length) return false;
+
+    const serialize = (obj) => {
+      const { id_tipo, cantidad, imagen_url } = obj;
+      return JSON.stringify({ id_tipo, cantidad, imagen_url });
+    };
+
+    const sorted1 = [...arr1].map(serialize).sort();
+    const sorted2 = [...arr2].map(serialize).sort();
+
+    return JSON.stringify(sorted1) === JSON.stringify(sorted2);
+  };
+
   const handleContinuar = async () => {
-    if (!validateContinuar()) {
+    if (!validateContinuar()) return;
+
+    const objetosPrevios = userData?.formularioMudanza?.objetos || [];
+
+    if (objetosIguales(formData.objetos, objetosPrevios)) {
+      console.log("No se enviaron datos porque no hubo cambios.");
+      nextStep(); // avanza sin enviar
       return;
     }
 
@@ -176,6 +197,7 @@ const CaracteristicasObjetos = ({
         }
       );
       console.log("Objetos enviados:", response.data);
+      actualzarFormData({ objetos: formData.objetos });
       nextStep();
     } catch (error) {
       console.error("Error al enviar los objetos:", error);

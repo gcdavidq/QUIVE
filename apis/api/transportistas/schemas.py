@@ -15,5 +15,5 @@ class TarifaSchema(Schema):
     precio_por_m3 = fields.Float(required=True)
     precio_por_kg = fields.Float(required=True)
     precio_por_km = fields.Float(required=True)
-    recargo_fragil = fields.Float(missing=0.0)
-    recargo_embalaje = fields.Float(missing=0.0)
+    recargo_fragil = fields.Float(load_default=0.0)
+    recargo_embalaje = fields.Float(load_default=0.0)

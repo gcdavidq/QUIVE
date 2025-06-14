@@ -23,7 +23,7 @@ def register():
         elif request.form.get("foto_perfil_url"):
             payload["foto_perfil_url"] = request.form.get("foto_perfil_url")
         else:
-            payload["foto_perfil_url"] = 'https://dl.dropboxusercontent.com/scl/fi/b4ttqjb0f6on9v4dxixwq/satoru-gojo-de-jujutsu-kaisen_3840x2160_xtrafondos.com.jpg?rlkey=j9xq97kkqcxdsojldqxnvbeha'
+            payload["foto_perfil_url"] = 'https://dl.dropboxusercontent.com/scl/fi/jq4kjwhrqyjkmnwrpw3ks/blank-profile-picture-973460_1280.png?rlkey=ol5z7dhlc0nc6mvtff2r680sr&st=i5vppvhq'
         data = schema.load(payload)
         print(data)
 
@@ -160,9 +160,9 @@ def google_login():
     try:
         payload = request.get_json()
         token = payload.get('token')
-
         if not token:
             return jsonify({"error": "Token requerido"}), 400
+
 
         # Verifica el token con Google
         google_data = verify_google_token(token)
@@ -172,7 +172,6 @@ def google_login():
 
         # Crea o busca el usuario
         result = create_or_get_google_user(google_data)
-
         if "error" in result:
             return jsonify({"msg": result["error"]}), 400
 
