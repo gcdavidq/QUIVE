@@ -86,51 +86,67 @@ def list_transportistas_verified(filters: dict):
     return cursor.fetchall()
 
 #-------tarifas de transportista-----------
-def create_or_update_tarifa(data: dict):
+def create_tarifa(data: dict):
     conn = get_db()
     cursor = conn.cursor()
 
     id_transportista = data["id_transportista"]
 
+    # Verificar si ya existe una tarifa
     cursor.execute("SELECT id_tarifa FROM Tarifas_Transportista WHERE id_transportista=%s", (id_transportista,))
     existe = cursor.fetchone()
-
     if existe:
-        # Actualizar
-        sql = """
-            UPDATE Tarifas_Transportista
-            SET precio_por_m3=%s, precio_por_kg=%s, precio_por_km=%s,
-                recargo_fragil=%s, recargo_embalaje=%s
-            WHERE id_transportista=%s
-        """
-        cursor.execute(sql, (
-            data["precio_por_m3"],
-            data["precio_por_kg"],
-            data["precio_por_km"],
-            data.get("recargo_fragil", 0.0),
-            data.get("recargo_embalaje", 0.0),
-            id_transportista
-        ))
-    else:
-        # Insertar
-        sql = """
-            INSERT INTO Tarifas_Transportista (
-                id_transportista, precio_por_m3, precio_por_kg, precio_por_km,
-                recargo_fragil, recargo_embalaje
-            ) VALUES (%s, %s, %s, %s, %s, %s)
-        """
-        cursor.execute(sql, (
-            id_transportista,
-            data["precio_por_m3"],
-            data["precio_por_kg"],
-            data["precio_por_km"],
-            data.get("recargo_fragil", 0.0),
-            data.get("recargo_embalaje", 0.0),
-        ))
+        raise Exception("La tarifa ya existe para este transportista. Usa PUT para actualizarla.")
+
+    # Insertar nueva tarifa
+    sql = """
+        INSERT INTO Tarifas_Transportista (
+            id_transportista, precio_por_m3, precio_por_kg, precio_por_km,
+            recargo_fragil, recargo_embalaje
+        ) VALUES (%s, %s, %s, %s, %s, %s)
+    """
+    cursor.execute(sql, (
+        id_transportista,
+        data["precio_por_m3"],
+        data["precio_por_kg"],
+        data["precio_por_km"],
+        data.get("recargo_fragil", 0.0),
+        data.get("recargo_embalaje", 0.0),
+    ))
 
     conn.commit()
     return get_tarifa_by_transportista(id_transportista)
 
+def update_tarifa(data: dict):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    id_transportista = data["id_transportista"]
+
+    # Verificar si existe una tarifa
+    cursor.execute("SELECT id_tarifa FROM Tarifas_Transportista WHERE id_transportista=%s", (id_transportista,))
+    existe = cursor.fetchone()
+    if not existe:
+        raise Exception("No existe una tarifa para este transportista. Usa POST para crearla.")
+
+    # Actualizar la tarifa existente
+    sql = """
+        UPDATE Tarifas_Transportista
+        SET precio_por_m3=%s, precio_por_kg=%s, precio_por_km=%s,
+            recargo_fragil=%s, recargo_embalaje=%s
+        WHERE id_transportista=%s
+    """
+    cursor.execute(sql, (
+        data["precio_por_m3"],
+        data["precio_por_kg"],
+        data["precio_por_km"],
+        data.get("recargo_fragil", 0.0),
+        data.get("recargo_embalaje", 0.0),
+        id_transportista
+    ))
+
+    conn.commit()
+    return get_tarifa_by_transportista(id_transportista)
 
 def get_tarifa_by_transportista(id_transportista: int):
     conn = get_db()

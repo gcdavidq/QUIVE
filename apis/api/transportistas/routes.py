@@ -3,7 +3,8 @@ from api.transportistas.services import (
     upload_or_update_my_documentos,
     get_documentos_by_id,
     list_transportistas_verified,
-    create_or_update_tarifa,
+    create_tarifa,
+    update_tarifa,
     get_tarifa_by_transportista
 )
 from api.transportistas.schemas import DocumentosSchema, VerificacionSchema, TarifaSchema
@@ -62,16 +63,27 @@ def get_transportistas():
     return jsonify(resultado), 200
 
 @transportistas_bp.route("/me/tarifa", methods=["POST"])
-def post_or_update_tarifa():
+def post_tarifa():
     payload = request.get_json()
-    print(payload)
     schema = TarifaSchema()
     try:
         data = schema.load(payload)
     except ValidationError as err:
         return jsonify({"errors": err.messages}), 400
 
-    resultado = create_or_update_tarifa(data)
+    resultado = create_tarifa(data)
+    return jsonify(resultado), 201
+
+@transportistas_bp.route("/me/tarifa/<int:id_transportista>", methods=["PUT"])
+def put_tarifa(id_transportista):
+    payload = request.get_json()
+    schema = TarifaSchema()
+    try:
+        data = schema.load(payload)
+    except ValidationError as err:
+        return jsonify({"errors": err.messages}), 400
+    data['id_transportista']= id_transportista
+    resultado = update_tarifa(data)
     return jsonify(resultado), 201
 
 

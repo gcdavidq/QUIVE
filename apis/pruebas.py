@@ -1,21 +1,47 @@
-from utils.geo import get_distance_time, get_road_accessible_coordinates
-from utils.generar_html import generar_html_ruta  # asegúrate de importar bien
+import pymysql
+from decimal import Decimal
 
-# Coordenadas de origen y destino
-lat1, lon1 = 19.4326, -99.1332  # CDMX centro
-lat2, lon2 = 19.4410, -99.1450  # destino cercano
+# Conexión a la base de datos
+conn = pymysql.connect(
+    host='tramway.proxy.rlwy.net',
+    port= 27353,
+    user='root',
+    password='csbMTGDfyqRzbyWHEvyllSEVSRXsOrqg',
+    db='quive',
+    cursorclass=pymysql.cursors.DictCursor  # Para recibir dicts
+)
 
-try:
-    resultado = get_distance_time(lat1, lon1, lat2, lon2)
-    print(f"Distancia Haversine: {resultado['haversine_km']} km")
-    print(f"Distancia Ruta: {resultado['route_distance_km']} km")
-    print(f"Duración: {resultado['route_duration_min']} min")
-    coordenadas = get_road_accessible_coordinates(
-        "Jirón Piura 1, Huancavelica, Huancavelica, Huancavelica, Peru"
-    )
-    print(coordenadas)
+def obtener_transportistas_recomendados(id_solicitud, conn):
+    def calcular_puntaje(t, pesos):
+        calif_score = float(t["promedio_calificaciones"]) / 5.0
+        incidentes_score = 1 / (1 + float(t["cantidad_incidentes"]))
+        precio_score = 1 / (1 + float(t["precio_estimado_total"]))
 
-    generar_html_ruta(resultado['route_geometry'], output_path='ruta.html')
+        return (
+            pesos["calificacion"] * calif_score +
+            pesos["incidentes"] * incidentes_score +
+            pesos["precio"] * precio_score
+        )
 
-except Exception as e:
-    print("❌ Error al calcular o generar mapa:", e)
+    pesos = {
+        "calificacion": 0.5,
+        "incidentes": 0.2,
+        "precio": 0.3
+    }
+
+    with conn.cursor() as cursor:
+        cursor.callproc("ObtenerTransportistasRecomendados", (id_solicitud,))
+        resultados = cursor.fetchall()
+    for t in resultados:
+        t["puntaje"] = calcular_puntaje(t, pesos)
+
+    transportistas_ordenados = sorted(resultados, key=lambda x: x["puntaje"], reverse=True)
+
+    return transportistas_ordenados
+
+
+# Ejemplo de uso
+lista = obtener_transportistas_recomendados(8, conn)
+
+for t in lista:
+    print(f"{t['nombre_completo']} - Puntaje: {t['puntaje']:.3f} - Precio: {t['precio_estimado_total']} - Calificación: {t['promedio_calificaciones']}")
