@@ -49,18 +49,16 @@ def get_by_id_documentos(id_usuario):
         return jsonify({"msg": "No existen documentos para ese usuario"}), 404
     return jsonify(documentos), 200
 
-@transportistas_bp.route("", methods=["GET"])
-def get_transportistas():
-    # Público: listar transportistas verificados, con filtros opcionales (no implementados)
-    filtros = {
-        "lat": request.args.get("lat"),
-        "lng": request.args.get("lng"),
-        "id_tipo_vehiculo": request.args.get("id_tipo_vehiculo"),
-        "calificacion_minima": request.args.get("calificacion_minima")
-    }
+
+@transportistas_bp.route("<int:id_solicitud>/<string:cantidad>", methods=["GET"])
+def get_transportistas(id_solicitud, cantidad):
     # En este ejemplo ignoramos los filtros y devolvemos todos los verificados
-    resultado = list_transportistas_verified(filtros)
-    return jsonify(resultado), 200
+    resultado = list_transportistas_verified(id_solicitud)
+    if cantidad=="unico":
+        return jsonify(resultado[0]), 200
+    elif cantidad=="all":
+        return jsonify(resultado), 200
+#<------------------------Tarifas------------------------------->
 
 @transportistas_bp.route("/me/tarifa", methods=["POST"])
 def post_tarifa():

@@ -1,19 +1,40 @@
-import React from 'react';
+import React, { useEffect, useState } from "react";
 import { Star } from 'lucide-react';
 
-const SeleccionConductor = ({ nextStep, seleccionarConductor, setCurrentStep }) => {
-  const conductorRecomendado = {
-    id: 1,
-    nombre: "Juan Perez",
-    rating: 4.8,
-    reviews: 48,
-    distancia: "15 km",
-    tiempoLlegada: "15 minutos",
-    vehiculo: "Camión Mediano",
-    capacidad: "12 m³",
-    viajes: 234,
-    precio: 500
-  };
+const SeleccionConductor = ({ nextStep, seleccionarConductor, setCurrentStep, formData }) => {
+  const [conductorRecomendado, setConductorRecomendado] = useState(null);
+  useEffect(() => {
+    const fetchConductor = async () => {
+      try {
+        const response = await fetch(`http://127.0.0.1:5000/transportistas/${formData.id_solicitud}/unico`);
+        const data = await response.json();
+        console.log("Conductor recomendado:", data);
+        setConductorRecomendado({
+          id_transportista: data.id_transportista,
+          nombre: data.nombre_completo,
+          foto: data.foto_perfil_url,
+          puntaje: data.promedio_calificaciones,
+          rating: parseFloat(data.promedio_calificaciones).toFixed(1),
+          reviews: data.viajes_realizados,
+          distancia: `${(formData.distancia / 1000).toFixed(1)} km`, // metros a km
+          tiempo: data.tiempo_estimado_horas * 60 > 60
+          ? `${Math.floor(data.tiempo_estimado_horas)} h ${(data.tiempo_estimado_horas * 60 % 60).toFixed(0)} min`
+          : `${(data.tiempo_estimado_horas * 60).toFixed(0)} min`,
+          vehiculo: data.nombre_vehiculo, // Requiere más datos si quieres el nombre real
+          capacidad: `${data.capacidad_volumen} m³`, // Si quieres volumen, necesitas consultar
+          viajes: data.viajes_realizados, // Este valor deberías obtenerlo aparte
+          precio: parseFloat(data.precio_estimado_total).toFixed(2)
+        });
+      } catch (error) {
+        console.error("Error al obtener el conductor:", error);
+      }
+    };
+
+    fetchConductor();
+  }, [formData]);
+  // Renderiza algo mientras se carga
+  if (!conductorRecomendado) return <p>Cargando conductor recomendado...</p>;
+
 
   return (
     <div className="p-6">
@@ -58,7 +79,7 @@ const SeleccionConductor = ({ nextStep, seleccionarConductor, setCurrentStep }) 
 
             <div className="flex space-x-4 text-sm text-gray-600 mb-4">
               <span className="bg-blue-100 px-2 py-1 rounded">{conductorRecomendado.distancia} de distancia</span>
-              <span className="bg-green-100 px-2 py-1 rounded">Llega en {conductorRecomendado.tiempoLlegada}</span>
+              <span className="bg-green-100 px-2 py-1 rounded">Llega en {conductorRecomendado.tiempo}</span>
             </div>
           </div>
 

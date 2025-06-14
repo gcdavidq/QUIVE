@@ -1,12 +1,44 @@
-import React from 'react';
+import React, { useEffect, useState } from "react";
 import { Star } from 'lucide-react';
 
-const ListaConductores = ({ nextStep, seleccionarConductor }) => {
-  const conductores = [
-    { id: 1, nombre: "Carlos Mendoza", status: "DISPONIBLE", color: "green", precio: 480, rating: 4.8, reviews: 124, distancia: "2.5 km", tiempo: "15 min", vehiculo: "Camión grande - 15 m²" },
-    { id: 2, nombre: "María González", status: "OCUPADO", color: "red", precio: 520, rating: 4.9, reviews: 89, distancia: "3.2 km", tiempo: "20 min", vehiculo: "Camión mediano - 12 m²" },
-    { id: 3, nombre: "Luis Rodríguez", status: "DISPONIBLE", color: "green", precio: 450, rating: 4.7, reviews: 156, distancia: "1.8 km", tiempo: "12 min", vehiculo: "Camión grande - 18 m²" }
-  ];
+const ListaConductores = ({ nextStep, seleccionarConductor, formData }) => {
+  const [conductores, setConductores] = useState([]);
+
+useEffect(() => {
+  const fetchConductores = async () => {
+    try {
+      const response = await fetch(`http://127.0.0.1:5000/transportistas/${formData.id_solicitud}/all`);
+      const data = await response.json(); // Espera una lista de objetos
+
+      const nuevosConductores = data.map((c, index) => ({
+        id: c.id_transportista,
+        nombre: c.nombre_completo,
+        status: "DISPONIBLE", // o "OCUPADO", si tienes lógica para eso
+        color: "green",       // o "red", según el estado
+        precio: parseFloat(c.precio_estimado_total).toFixed(2),
+        rating: parseFloat(c.promedio_calificaciones).toFixed(1),
+        reviews: c.viajes_realizados,
+        distancia: `${(formData.distancia / 1000).toFixed(1)} km`,
+        tiempo: c.tiempo_estimado_horas * 60 > 60
+          ? `${Math.floor(c.tiempo_estimado_horas)} h ${(c.tiempo_estimado_horas * 60 % 60).toFixed(0)} min`
+          : `${(c.tiempo_estimado_horas * 60).toFixed(0)} min`,
+        vehiculo: `${c.nombre_vehiculo} - ${c.capacidad_volumen} m³`
+      }));
+
+      setConductores(nuevosConductores);
+    } catch (error) {
+      console.error("Error al obtener los conductores:", error);
+    }
+  };
+
+  fetchConductores();
+}, [formData]);
+
+console.log("Conductores:", conductores);
+
+// Mostrar algo mientras carga
+if (conductores.length === 0) return <p>Cargando conductores...</p>;
+  
 
   return (
     <div className="p-6">

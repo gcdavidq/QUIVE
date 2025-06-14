@@ -9,7 +9,9 @@ import MetodosPago from './MudanzaFlow/MetodosPago';
 import { ArrowLeft } from 'lucide-react';
 
 const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(() =>
+    userData?.formularioMudanza?.conductor ? 3 : 1
+  );
   const initialFormData = {
     id_solicitud: '',
     origen: '',
@@ -39,10 +41,16 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
   const nextStep = () => currentStep < 5 && setCurrentStep(currentStep + 1);
   const prevStep = () => currentStep > 1 && setCurrentStep(currentStep - 1);
   const volver = () => {
+    if (currentStep === 3 && formData.conductor) {
+      // Si ya se seleccionó un conductor, solo se puede volver al inicio
+      setActiveTab('inicio');
+      return;
+    }
+
     if (currentStep > 1) {
       prevStep();
     } else {
-      setActiveTab('inicio')
+      setActiveTab('inicio');
     }
   };
 
@@ -55,7 +63,7 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
   };
 
   const eliminarObjeto = id => setFormData({ ...formData, objetos: formData.objetos.filter(obj => obj.id !== id) });
-  const seleccionarConductor = conductor => setFormData({ ...formData, conductor });
+  const seleccionarConductor = conductor => actualizarFormData({ conductor: conductor });
   const validarPaso1 = () => {
     if (!formData.origen || !formData.destino || !formData.fecha || !formData.hora) {
       alert('Complete todos los campos');
@@ -115,12 +123,14 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
           setCurrentStep={setCurrentStep}
           seleccionarConductor={seleccionarConductor}
           nextStep={nextStep}
+          formData={formData}
         />
       )}
       {currentStep === 4 && (
         <ListaConductores
           seleccionarConductor={seleccionarConductor}
           nextStep={nextStep}
+          formData={formData}
         />
       )}
       {currentStep === 5 && (

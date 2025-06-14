@@ -65,25 +65,35 @@ def get_documentos_by_id(id_usuario: int):
     cursor.execute(sql, (id_usuario,))
     return cursor.fetchone()
 
-def list_transportistas_verified(filters: dict):
-    """
-    Listado público de transportistas verificados, con filtros por proximidad,
-    tipo de vehículo y reputación mínima.
-    - Para proximidad, necesitarías lat/lng y calcular distancias (usando utils/geo.py).
-    - Para reputación, debes agregar un JOIN con Calificaciones y promedio.
-    Este ejemplo devuelve todos los verificados sin filtrar.
-    """
+def list_transportistas_verified(id_solicitud):
+    def calcular_puntaje(t, pesos):
+        calif_score = float(t["promedio_calificaciones"]) / 5.0
+        incidentes_score = 1 / (1 + float(t["cantidad_incidentes"]))
+        precio_score = 1 / (1 + float(t["precio_estimado_total"]))
+
+        return (
+            pesos["calificacion"] * calif_score +
+            pesos["incidentes"] * incidentes_score +
+            pesos["precio"] * precio_score
+        )
+
+    pesos = {
+        "calificacion": 0.5,
+        "incidentes": 0.2,
+        "precio": 0.3
+    }
     conn = get_db()
     cursor = conn.cursor()
-    # Ejemplo básico: listar transportistas con estado_verificacion='verificado'
-    sql = """
-        SELECT u.id_usuario, u.nombre_completo, u.telefono, u.Ubicacion, dt.licencia_conducir_url, dt.tarjeta_propiedad_url, dt.certificado_itv_url
-        FROM Usuarios u
-        JOIN Documentos_Transportista dt ON u.id_usuario = dt.id_usuario
-        WHERE u.tipo_usuario='transportista' AND dt.estado_verificacion='verificado'
-    """
-    cursor.execute(sql)
-    return cursor.fetchall()
+
+    cursor.callproc("ObtenerTransportistasRecomendados", (id_solicitud,))
+
+    resultados = cursor.fetchall()
+    for t in resultados:
+        t["puntaje"] = calcular_puntaje(t, pesos)
+
+    transportistas_ordenados = sorted(resultados, key=lambda x: x["puntaje"], reverse=True)
+
+    return transportistas_ordenados
 
 #-------tarifas de transportista-----------
 def create_tarifa(data: dict):
@@ -156,3 +166,4 @@ def get_tarifa_by_transportista(id_transportista: int):
     """
     cursor.execute(sql, (id_transportista,))
     return cursor.fetchone()
+

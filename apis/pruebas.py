@@ -32,6 +32,7 @@ def obtener_transportistas_recomendados(id_solicitud, conn):
     with conn.cursor() as cursor:
         cursor.callproc("ObtenerTransportistasRecomendados", (id_solicitud,))
         resultados = cursor.fetchall()
+        print(resultados)
     for t in resultados:
         t["puntaje"] = calcular_puntaje(t, pesos)
 
