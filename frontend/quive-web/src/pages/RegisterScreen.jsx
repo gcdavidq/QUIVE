@@ -7,7 +7,7 @@ import TarifasForm from './Registerutils/tarifas';
 import SubirImagen from './utils/SubirImagen'
 
 
-const RegisterScreen = ({onNavigate, userType, setUserType}) => {
+const RegisterScreen = ({onNavigate, userType, setUserType, setUserData}) => {
     console.log('setUserType:', setUserType); 
     const [direccion, setUbicacion] = useState({
       departamento: "",
@@ -132,13 +132,12 @@ const RegisterScreen = ({onNavigate, userType, setUserType}) => {
         }
         return;
       }
-
       if (userType === "transportista") {
         const documentosPayload = new FormData();
         const vehiculoPayload = new FormData();
-        
+
         try {
-          vehiculoPayload.append("id_usuario", data.id_usuario);
+          vehiculoPayload.append("id_usuario", data.usuario.id_usuario);
           vehiculoPayload.append("placa", formData.placa);
           vehiculoPayload.append("id_tipo_vehiculo", formData.tipoVehiculo);
           const VehResponse = await fetch("http://127.0.0.1:5000/vehiculos/me", {
@@ -150,20 +149,22 @@ const RegisterScreen = ({onNavigate, userType, setUserType}) => {
           const vehData = await VehResponse.json();
 
           if (!VehResponse.ok) {
-            console.error("Error al subir documentos:", vehData);
-            alert("Registro exitoso, pero ocurrió un error al subir los documentos.");
+            console.error("Error al registrar vehículo:", vehData);
+            alert("Ocurrió un error al registrar el vehículo.");
+            return; // ❌ Detiene el flujo
           }
         } catch (error) {
-          console.error("Error al conectar con la API de documentos:", error);
-          alert("Registro exitoso, pero ocurrió un error al enviar datos del vehiculo.");
+          console.error("Error al conectar con la API de vehículo:", error);
+          alert("Ocurrió un error al enviar los datos del vehículo.");
+          return;
         }
 
         try {
           documentosPayload.append("licencia_conducir_url", documentos.licencia_conducir);
           documentosPayload.append("tarjeta_propiedad_url", documentos.tarjeta_propiedad);
           documentosPayload.append("certificado_itv_url", documentos.certificado_itv);
-          documentosPayload.append("id_usuario", data.id_usuario);
-          
+          documentosPayload.append("id_usuario", data.usuario.id_usuario);
+
           const docResponse = await fetch("http://127.0.0.1:5000/transportistas/me/documentos", {
             method: "POST",
             credentials: "include",
@@ -174,16 +175,18 @@ const RegisterScreen = ({onNavigate, userType, setUserType}) => {
 
           if (!docResponse.ok) {
             console.error("Error al subir documentos:", docData);
-            alert("Registro exitoso, pero ocurrió un error al subir los documentos.");
+            alert("Ocurrió un error al subir los documentos.");
+            return;
           }
         } catch (error) {
           console.error("Error al conectar con la API de documentos:", error);
-          alert("Registro exitoso, pero ocurrió un error al enviar los documentos.");
+          alert("Ocurrió un error al enviar los documentos.");
+          return;
         }
 
         try {
           const tarifaPayload = {
-            id_transportista: data.id_usuario,
+            id_transportista: data.usuario.id_usuario,
             precio_por_m3: parseFloat(tarifas.precio_por_m3),
             precio_por_kg: parseFloat(tarifas.precio_por_kg),
             precio_por_km: parseFloat(tarifas.precio_por_km),
@@ -204,14 +207,17 @@ const RegisterScreen = ({onNavigate, userType, setUserType}) => {
 
           if (!tarifaResponse.ok) {
             console.error("Error al registrar tarifas:", tarifaData);
-            alert("Registro exitoso, pero ocurrió un error al registrar las tarifas.");
+            alert("Ocurrió un error al registrar las tarifas.");
+            return;
           }
         } catch (error) {
           console.error("Error al conectar con la API de tarifas:", error);
-          alert("Registro exitoso, pero ocurrió un error al enviar los datos de tarifas.");
+          alert("Ocurrió un error al enviar los datos de tarifas.");
+          return;
         }
       }
-      onNavigate('registroExitoso');
+      setUserData(data.usuario);
+      onNavigate("registroExitoso");
     } catch (error) {
       console.error("Error al conectar con la API:", error);
       alert("Error de red o servidor.");

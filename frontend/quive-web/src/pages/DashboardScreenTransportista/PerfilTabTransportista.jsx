@@ -1,6 +1,6 @@
 import React from 'react';
 import {User} from 'lucide-react';
-const PerfilTabTransportista = ({ userData, onNavigate }) => {
+const PerfilTabTransportista = ({ userData, onNavigate, setUserData }) => {
     return (
     <div>
       <h2 className="text-2xl font-bold text-blue-600 mb-6">Mi Perfil</h2>
@@ -52,7 +52,17 @@ const PerfilTabTransportista = ({ userData, onNavigate }) => {
         {/* Logout */}
         <div className="bg-white rounded-lg shadow-sm">
           <button 
-            onClick={() => onNavigate('landing')}
+            onClick={() => {
+              // Limpiar localStorage
+              localStorage.removeItem('userData');
+              localStorage.removeItem('userType');
+
+              // Limpiar el estado
+              setUserData({});
+                      
+              // Navegar a la pantalla de inicio
+              onNavigate('landing');
+            }}
             className="w-full p-4 text-red-600 hover:bg-red-50 transition-colors rounded-lg"
           >
             Cerrar Sesión

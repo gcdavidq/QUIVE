@@ -49,6 +49,7 @@ const AppRoutes = () => {
               onNavigate={navigate}
               userType={userType}
               setUserType={setUserType}
+              setUserData={setUserData}
             />
           </PublicRoute>
         }

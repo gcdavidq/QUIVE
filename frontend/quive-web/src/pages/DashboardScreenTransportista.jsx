@@ -6,7 +6,7 @@ import PedidosTabTransportista from './DashboardScreenTransportista/PedidosTabTr
 import SeguimientoTabTransportista from './DashboardScreenTransportista/SeguimientoTabTransportista';
 import PerfilTabTransportista from './DashboardScreenTransportista/PerfilTabTransportista';
 
-const DashboardScreen = ({ userData, onNavigate, userType }) => {
+const DashboardScreen = ({ userData, onNavigate, userType, setUserData }) => {
     const [activeTab, setActiveTab] = useState('inicio');
 
   const renderContent = () => {
@@ -20,7 +20,7 @@ const DashboardScreen = ({ userData, onNavigate, userType }) => {
       case 'seguimiento':
         return <SeguimientoTabTransportista />;
       case 'perfil':
-        return <PerfilTabTransportista userData={userData} onNavigate={onNavigate} />;
+        return <PerfilTabTransportista userData={userData} onNavigate={onNavigate} setUserData={setUserData}/>;
       default:
         return <InicioTabTransportista userData={userData} userType={userType} />;
     }
