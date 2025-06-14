@@ -12,22 +12,16 @@ import RegisterScreen from '../pages/RegisterScreen';
 import LoginScreen from '../pages/LoginScreen';
 import RegistroExitosoScreen from '../pages/RegistroExitosoScreen';
 import DashboardScreen from '../pages/DashboardScreen';
-import DashboardScreenTransportistas from '../pages/DashboardScreenTransportista';
 
 import PrivateRoute from '../pages/utils/PrivateRoute';
 
 const AppRoutes = () => {
   const navigate = useNavigate();
-  const [userType, setUserType] = useState(() => localStorage.getItem('userType') || '');
   const [userData, setUserData] = useState(() => {
   
     const storedData = localStorage.getItem('userData');
     return storedData ? JSON.parse(storedData) : {};
   });
-
-  useEffect(() => {
-    localStorage.setItem('userType', userType);
-  }, [userType]);
 
   useEffect(() => {
     localStorage.setItem('userData', JSON.stringify(userData));
@@ -47,8 +41,6 @@ const AppRoutes = () => {
           <PublicRoute userData={userData}>
             <RegisterScreen
               onNavigate={navigate}
-              userType={userType}
-              setUserType={setUserType}
               setUserData={setUserData}
             />
           </PublicRoute>
@@ -72,21 +64,11 @@ const AppRoutes = () => {
         element={
           <PrivateRoute userData={userData}>
             {
-              userData?.tipo_usuario === 'transportista' ? (
-                <DashboardScreenTransportistas
+              <DashboardScreen
                   userData={userData}
                   setUserData={setUserData}
                   onNavigate={navigate}
-                  userType={userType}
-                />
-              ) : (
-                <DashboardScreen
-                  userData={userData}
-                  setUserData={setUserData}
-                  onNavigate={navigate}
-                  userType={userType}
-                />
-              )
+              />
             }
           </PrivateRoute>
         }

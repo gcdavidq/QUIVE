@@ -6,14 +6,15 @@ const InicioTab = ({ userData, setActiveTab}) => {
     <>
     {/* Welcome Card */}
     <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 text-white mb-8">
-      <h2 className="text-2xl font-bold mb-2">¡Hola, {userData.nombre_completo  || 'Usuario'}!</h2>
+      <h2 className="text-2xl font-bold mb-2">¡Hola, {userData.nombre_completo  || userData.tipo_usuario}!</h2>
       <p className="text-blue-100 mb-4">
         ¿Necesitas mudarte? Encuentra el camión perfecto para ti.'
       </p>
       <button 
-        onClick={() => setActiveTab('mudanza')}
-        className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors">
-        Solicitar Mudanza
+        onClick={() => setActiveTab(userData.tipo_usuario === 'transportista' ? 'pedidos' : 'mudanza')}
+        className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+      >
+        {userData.tipo_usuario === 'transportista' ? 'Ver Pedidos' : 'Solicitar Mudanza'}
       </button>
     </div>
 

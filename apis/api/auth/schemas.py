@@ -12,6 +12,6 @@ class RegisterSchema(Schema):
     foto_perfil_url = fields.String(required=True)
 
 class LoginSchema(Schema):
-    dni = fields.Str(required=False)
-    email = fields.Email(required=False)
-    contrasena = fields.Str(required=True)
+    dni = fields.String(required=False)
+    email = fields.String(required=False)
+    contrasena = fields.String(required=True)

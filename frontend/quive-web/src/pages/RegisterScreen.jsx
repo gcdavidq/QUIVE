@@ -7,8 +7,7 @@ import TarifasForm from './Registerutils/tarifas';
 import SubirImagen from './utils/SubirImagen'
 
 
-const RegisterScreen = ({onNavigate, userType, setUserType, setUserData}) => {
-    console.log('setUserType:', setUserType); 
+const RegisterScreen = ({onNavigate, setUserData}) => {
     const [direccion, setUbicacion] = useState({
       departamento: "",
       provincia: "",
@@ -39,7 +38,8 @@ const RegisterScreen = ({onNavigate, userType, setUserType, setUserData}) => {
     confirmPassword: '',
     placa: '',
     tipoVehiculo: '',
-    direccion: ''
+    direccion: '',
+    tipoUsuario: 'cliente'
   });
 
   const [fotoPerfil, setFotoPerfil] = useState(null);
@@ -78,9 +78,8 @@ const RegisterScreen = ({onNavigate, userType, setUserType, setUserData}) => {
     if (!formData.password) newErrors.password = 'La contraseña es requerida';
     else if (formData.password.length < 6) newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Las contraseñas no coinciden';
-    if (!userType) newErrors.userType = 'Selecciona un tipo de usuario';
 
-    if (userType === 'transportista') {
+    if (formData.tipoUsuario === 'transportista') {
       if (!formData.placa.trim()) newErrors.placa = 'La placa es requerida';
       if (!formData.tipoVehiculo.trim()) newErrors.tipoVehiculo = 'El tipo de vehículo es requerido';
     }
@@ -108,7 +107,7 @@ const RegisterScreen = ({onNavigate, userType, setUserType, setUserData}) => {
     formPayload.append("telefono", formData.telefono);
     formPayload.append("dni", parseInt(formData.dni));
     formPayload.append("contrasena", formData.password);
-    formPayload.append("tipo_usuario", userType);
+    formPayload.append("tipo_usuario", formData.tipoUsuario);
     const ubicacion = `${tipoVia} ${nombreVia} ${numero}, ${distrito}, ${provincia}, ${departamento}, Peru; ${lat}, ${lng}`;
     formPayload.append("ubicacion", ubicacion);
     formPayload.append("foto_perfil_url", fotoPerfil || "null");
@@ -132,7 +131,7 @@ const RegisterScreen = ({onNavigate, userType, setUserType, setUserData}) => {
         }
         return;
       }
-      if (userType === "transportista") {
+      if (formData.tipoUsuario === "transportista") {
         const documentosPayload = new FormData();
         const vehiculoPayload = new FormData();
 
@@ -248,9 +247,9 @@ const RegisterScreen = ({onNavigate, userType, setUserType, setUserData}) => {
             <div className="flex bg-blue-50 rounded-full p-1 mb-8">
               <button
                 type="button"
-                onClick={() => setUserType('cliente')}
+                onClick={() => setFormData({ ...formData, tipoUsuario: 'cliente' })}
                 className={`flex-1 py-3 px-6 rounded-full transition-colors ${
-                  userType === 'cliente' 
+                  formData.tipoUsuario === 'cliente' 
                     ? 'bg-blue-600 text-white shadow-sm' 
                     : 'text-blue-400 hover:text-blue-600'
                 }`}
@@ -259,9 +258,9 @@ const RegisterScreen = ({onNavigate, userType, setUserType, setUserData}) => {
               </button>
               <button
                 type="button"
-                onClick={() => setUserType('transportista')}
+                onClick={() => setFormData({ ...formData, tipoUsuario: 'transportista' })}
                 className={`flex-1 py-3 px-6 rounded-full transition-colors ${
-                  userType === 'transportista' 
+                  formData.tipoUsuario === 'transportista' 
                     ? 'bg-blue-600 text-white shadow-sm' 
                     : 'text-blue-400 hover:text-blue-600'
                 }`}
@@ -269,7 +268,6 @@ const RegisterScreen = ({onNavigate, userType, setUserType, setUserData}) => {
                 TRANSPORTISTA
               </button>
             </div>
-            {errors.userType && <p className="text-red-500 text-sm mb-4">{errors.userType}</p>}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -398,7 +396,7 @@ const RegisterScreen = ({onNavigate, userType, setUserType, setUserData}) => {
               )}
             </div>
 
-            {userType === 'transportista' && (
+            {formData.tipoUsuario === 'transportista' && (
               <>
                 <div className="grid grid-cols-2 gap-4">
                   <div>

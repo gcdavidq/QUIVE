@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Package, Navigation, User } from 'lucide-react';
+import { Home, Package, Navigation, User, Bell } from 'lucide-react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 
 import InicioTab from './DashboardScreen/InicioTab';
@@ -7,8 +7,9 @@ import PedidosTab from './DashboardScreen/PedidosTab';
 import SeguimientoTab from './DashboardScreen/SeguimientoTab';
 import PerfilTab from './DashboardScreen/PerfilTab';
 import MudanzaFlow from './MudanzaFlow';
+import Notificaciones from './DashboardScreen/Notificaciones';
 
-const DashboardScreen = ({ userData, onNavigate, userType, setUserData}) => {
+const DashboardScreen = ({ userData, onNavigate, setUserData}) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -25,12 +26,12 @@ const DashboardScreen = ({ userData, onNavigate, userType, setUserData}) => {
         <div className="text-2xl font-bold text-blue-600">QUIVE</div>
         <div className="flex space-x-4">
           <button  
-            onClick={() => handleTabChange('perfil')}
+            onClick={() => handleTabChange('notificaciones')}
             className={`flex flex-col items-center py-3 px-4 ${
               activeTab === 'perfil' ? 'text-blue-600 bg-blue-50' : 'text-gray-600'
             } rounded-lg transition-colors`}
           >
-            <User size={24} />
+            <Bell size={24} />
           </button>
         </div>
       </header>
@@ -49,7 +50,6 @@ const DashboardScreen = ({ userData, onNavigate, userType, setUserData}) => {
                 userData={userData}
                 setActiveTab={handleTabChange}
                 onNavigate={onNavigate}
-                userType={userType}
               />
             }
           />
@@ -57,7 +57,6 @@ const DashboardScreen = ({ userData, onNavigate, userType, setUserData}) => {
             path="pedidos"
             element={
               <PedidosTab 
-                userType={userType} 
                 userData={userData}
                 setActiveTab={handleTabChange} 
               />
@@ -82,6 +81,16 @@ const DashboardScreen = ({ userData, onNavigate, userType, setUserData}) => {
                 setUserData={setUserData}
                 onNavigate={onNavigate}
                 setActiveTab={handleTabChange}
+              />
+            }
+          />
+          <Route
+            path="notificaciones"
+            element={
+              <Notificaciones
+                userData={userData}
+                setUserData={setUserData}
+                onNavigate={onNavigate}
               />
             }
           />

@@ -16,7 +16,10 @@ const PrincipalSelector = ({ formData, seleccionarConductor, nextStep, actualiza
             seleccionarConductor={seleccionarConductor}
             nextStep={nextStep}
           />
-        : <WaitingScreen onCancelar={handleCancelar} />
+        : <WaitingScreen 
+            onCancelar={handleCancelar}
+            actualizarFormData={actualizarFormData}
+            formData={formData} />
       }
     </>
   );

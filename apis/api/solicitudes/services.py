@@ -101,23 +101,3 @@ def list_solicitudes_disponibles(filters: dict):
     sql = "SELECT * FROM Solicitudes WHERE estado='en espera'"
     cursor.execute(sql)
     return cursor.fetchall()
-
-def get_tarifa_detallada(id_solicitud: int):
-    """
-    Retorna desglose de tarifa: distancia, volumen, servicios.
-    Aquí devolvemos un ejemplo fijo.
-    """
-    # En producción: calcula sobre la base de datos y utilidades de geo
-    return {
-        "id_solicitud": id_solicitud,
-        "distancia_km": 5.2,
-        "costo_distancia": 52.0,
-        "costo_volumen": 20.0,
-        "servicios_adicionales": {
-            "embalaje": True,
-            "costo_embalaje": 15.0,
-            "ayudante": 1,
-            "costo_ayudante": 10.0
-        },
-        "costo_total": 97.0
-    }

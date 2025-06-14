@@ -24,6 +24,7 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
     objetos: [],
     conductor: null,
     notas: '',
+    asignacion: {},
     ...(userData?.formularioMudanza || {})  // ← Sobrescribe con datos existentes si hay
   };
   const [formData, setFormData] = useState(initialFormData);
@@ -34,7 +35,6 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
       ...prev,
       formularioMudanza: nuevo,
     }));
-    console.log('FormData actualizado:', nuevo);
   };
 
   const [nuevoObjeto, setNuevoObjeto] = useState({});

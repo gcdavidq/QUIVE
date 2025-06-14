@@ -69,7 +69,6 @@ const PerfilTab = ({ userData, onNavigate, setUserData}) => {
                     onClick={() => {
                       // Limpiar localStorage
                       localStorage.removeItem('userData');
-                      localStorage.removeItem('userType');
 
                       // Limpiar el estado
                       setUserData({});

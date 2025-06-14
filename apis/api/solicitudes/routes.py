@@ -4,8 +4,7 @@ from api.solicitudes.services import (
     create_solcitud,
     update_solicitud,
     actualizar_solicitud_completa,
-    list_solicitudes_disponibles,
-    get_tarifa_detallada
+    list_solicitudes_disponibles
 )
 from api.solicitudes.schemas import CrearSolicitudSchema, ActualizarSolicitudSchema
 from marshmallow import ValidationError
@@ -65,8 +64,3 @@ def get_solicitudes_disponibles():
     }
     resultado = list_solicitudes_disponibles(filtros)
     return jsonify(resultado), 200
-
-@solicitudes_bp.route("/<int:id_solicitud>/tarifa", methods=["GET"])
-def get_tarifa(id_solicitud):
-    detalle = get_tarifa_detallada(id_solicitud)
-    return jsonify(detalle), 200

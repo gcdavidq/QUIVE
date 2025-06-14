@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import {MapPin, Truck} from 'lucide-react';
 
-const PedidosTab = ({userType, userData, setActiveTab}) => {
+const PedidosTab = ({userData, setActiveTab}) => {
     const [pedidos] = useState([
     {
       id: 1,
@@ -33,7 +33,7 @@ const PedidosTab = ({userType, userData, setActiveTab}) => {
       tipoVehiculo: 'camioneta'
     }
   ]);
-  const pedidosFiltrados = pedidos.filter(p =>p.clienteEmail ===userData.email);
+  const pedidosFiltrados = pedidos;
 
   const getEstadoColor = (estado) => {
     switch (estado) {
@@ -61,12 +61,22 @@ const PedidosTab = ({userType, userData, setActiveTab}) => {
         <h2 className="text-2xl font-bold text-blue-600">
           Mis Pedidos
         </h2>
-        <button 
-          onClick={() => setActiveTab('mudanza')}  
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Nuevo Pedido
-        </button>
+        {userData.tipo_usuario === 'transportista' ? (
+          <button 
+            className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+            onClick={() => alert("Aquí se pueden aplicar filtros de pedidos")}
+          >
+            Filtros
+          </button>
+        ) : (
+          <button 
+            onClick={() => setActiveTab('mudanza')}  
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Nuevo Pedido
+          </button>
+        )}
+
       </div>
 
       <div className="space-y-4">
@@ -98,7 +108,7 @@ const PedidosTab = ({userType, userData, setActiveTab}) => {
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-500">Fecha: {pedido.fecha}</span>
               <div className="space-x-2">
-                {userType === 'transportista' ? (
+                {userData.tipo_usuario === 'transportista' ? (
                   <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
                     Aceptar
                   </button>

@@ -8,7 +8,6 @@ const SeleccionConductor = ({ nextStep, seleccionarConductor, formData }) => {
       try {
         const response = await fetch(`http://127.0.0.1:5000/transportistas/${formData.id_solicitud}/unico`);
         const data = await response.json();
-        console.log("Conductor recomendado:", data);
         setConductorRecomendado({
           id_transportista: data.id_transportista,
           nombre: data.nombre_completo,
