@@ -8,22 +8,38 @@ def list_my_asignaciones(user_id, tipo):
     """
     conn = get_db()
     cursor = conn.cursor()
+    inicial = """
+                SELECT 
+                    a.id_asignacion,
+                    a.estado,
+                    a.precio,
 
-    if tipo == "cliente":
-        sql = """
-            SELECT a.id_asignacion, a.id_solicitud, a.id_transportista, a.fecha_confirmacion, a.estado
-            FROM Asignaciones a
-            JOIN Solicitudes s ON a.id_solicitud = s.id_solicitud
-            WHERE s.id_cliente=%s AND a.estado IN ('pendiente', 'confirmado', 'rechazado')
-        """
-        cursor.execute(sql, (user_id,))
-    else:  # transportista
-        sql = """
-            SELECT id_asignacion, id_solicitud, id_transportista, fecha_confirmacion, estado
-            FROM Asignaciones
-            WHERE id_transportista=%s AND estado IN ('pendiente', 'confirmado', 'rechazado')
-        """
-        cursor.execute(sql, (user_id,))
+                    s.origen,
+                    s.destino,
+                    s.distancia,
+                    s.fecha_hora,
+
+                    u.id_usuario AS usuario_id,
+                    u.nombre_completo AS usuario_nombre,
+                    u.telefono AS usuario_telefono,
+                    u.foto_perfil_url AS usuario_foto
+
+                FROM Asignaciones a
+                """
+    if tipo == 'transportista':
+        cursor.execute(inicial+"""
+                JOIN Solicitudes s ON a.id_solicitud = s.id_solicitud
+                JOIN Usuarios u ON s.id_cliente = u.id_usuario
+                WHERE a.id_transportista = %s
+                ORDER BY a.fecha_confirmacion DESC
+            """, (user_id,))
+    elif tipo == 'cliente':
+        cursor.execute(inicial + """
+                JOIN Solicitudes s ON a.id_solicitud = s.id_solicitud
+                JOIN Usuarios u ON a.id_transportista = u.id_usuario
+                WHERE s.id_cliente = %s
+                ORDER BY a.fecha_confirmacion DESC
+            """, (user_id,))
     return cursor.fetchall()
 
 def create_asignacion(data: dict):
@@ -65,11 +81,12 @@ def change_estado_asignacion(id_asignacion: int, nuevo_estado: str):
     cursor.execute("""
             SELECT id_transportista FROM Asignaciones WHERE id_asignacion = %s
         """, (id_asignacion,))
-    id_transportista = cursor.fetchone()[0]
+    id_transportista = cursor.fetchone()['id_transportista']
 
     mensaje = f"Has {'aceptado' if nuevo_estado == 'confirmado' else 'rechazado'} una solicitud"
     cursor.execute("""
             INSERT INTO Notificaciones (id_usuario, tipo, mensaje)
             VALUES (%s, 'asignacion', %s)
         """, (id_transportista, mensaje))
-
+    print(mensaje)
+    return {"mensaje": mensaje}

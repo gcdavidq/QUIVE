@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Bell, X } from 'lucide-react';
+import { Bell, X, MapPin, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const Notificaciones = ({ userData }) => {
   const navigate = useNavigate();
   const [asignaciones, setAsignaciones] = useState([]);
-
+  console.log('userData en Notificaciones:', userData);
   useEffect(() => {
     if (!userData?.id_usuario || !userData?.tipo_usuario) return;
     axios.get(`http://localhost:5000/asignaciones/${userData.id_usuario}/${userData.tipo_usuario}`)
@@ -30,7 +30,8 @@ const Notificaciones = ({ userData }) => {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
-      <div className="bg-white rounded-2xl shadow-xl w-[90%] max-w-md p-6 max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-2xl shadow-xl w-[60%]  p-6 max-h-[90vh] flex flex-col">
+        {/* Header */}
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-blue-600 flex items-center space-x-2">
             <Bell className="w-6 h-6 text-blue-500" />
@@ -46,34 +47,65 @@ const Notificaciones = ({ userData }) => {
           </button>
         </div>
 
-        {/* Contenedor scrolleable */}
+        {/* Contenido scrolleable */}
         <div className="overflow-y-auto space-y-4 pr-1" style={{ maxHeight: 'calc(90vh - 80px)' }}>
-          {asignaciones.map(asignacion => (
-            <div key={asignacion.id_asignacion} className="bg-white p-4 rounded shadow border">
-              <p><strong>Origen:</strong> {asignacion.origen}</p>
-              <p><strong>Destino:</strong> {asignacion.destino}</p>
-              <p><strong>Precio:</strong> S/ {asignacion.precio}</p>
-              <p><strong>Fecha:</strong> {new Date(asignacion.fecha).toLocaleDateString()}</p>
+          {asignaciones.length === 0 && (
+            <p className="text-gray-500 text-sm text-center py-4">No tienes notificaciones por el momento.</p>
+          )}
 
+          {asignaciones.map(asignacion => (
+            <div key={asignacion.id_asignacion} className="bg-white p-4 rounded-lg shadow border border-gray-200 space-y-3">
+              {/* Información del otro usuario */}
+              <div className="flex items-center space-x-3">
+                <img
+                    src={asignacion.usuario_foto}
+                    alt="Foto del usuario"
+                    className="w-10 h-10 rounded-full object-cover border border-gray-300"
+                    />
+                <div>
+                  <p className="text-sm font-medium text-gray-800">{asignacion.usuario_nombre}</p>
+                  <p className="text-xs text-gray-500">{asignacion.usuario_telefono}</p>
+                </div>
+              </div>
+
+              {/* Ruta */}
+              <div className="text-sm text-gray-700 space-y-1">
+                <div className="flex items-center">
+                  <MapPin className="w-4 h-4 mr-2 text-blue-500" />
+                  <span><strong>Desde:</strong> {asignacion.origen}</span>
+                </div>
+                <div className="flex items-center">
+                  <MapPin className="w-4 h-4 mr-2 text-green-500" />
+                  <span><strong>Hasta:</strong> {asignacion.destino}</span>
+                </div>
+              </div>
+
+              {/* Detalles */}
+              <div className="text-sm text-gray-600 space-y-1">
+                <p><strong>Fecha:</strong> {new Date(asignacion.fecha_hora).toLocaleDateString()}</p>
+                <p><strong>Precio:</strong> S/ {asignacion.precio}</p>
+              </div>
+
+              {/* Estado o botones */}
               {asignacion.estado === 'pendiente' ? (
-                <div className="mt-2 space-x-2">
+                <div className="flex justify-end space-x-2 pt-2">
                   <button
                     onClick={() => responder(asignacion.id_asignacion, 'confirmado')}
-                    className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                    className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm"
                     type="button"
                   >
                     Aceptar
                   </button>
                   <button
                     onClick={() => responder(asignacion.id_asignacion, 'rechazado')}
-                    className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+                    className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm"
                     type="button"
                   >
                     Rechazar
                   </button>
                 </div>
               ) : (
-                <div className={`mt-2 px-2 py-1 rounded text-sm inline-block ${colorEstado(asignacion.estado)}`}>
+                <div className={`mt-2 px-2 py-1 rounded text-xs inline-block font-semibold ${colorEstado(asignacion.estado)}`}>
                   {asignacion.estado.toUpperCase()}
                 </div>
               )}

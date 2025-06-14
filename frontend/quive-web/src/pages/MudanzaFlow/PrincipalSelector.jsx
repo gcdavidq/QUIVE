@@ -2,7 +2,7 @@ import React from 'react';
 import ListaConductores from './ListaConductores';
 import WaitingScreen from './WaitingScreen';
 
-const PrincipalSelector = ({ formData, seleccionarConductor, nextStep, actualizarFormData, setCurrentStep }) => {
+const PrincipalSelector = ({ formData, seleccionarConductor, nextStep, actualizarFormData, setCurrentStep, userData }) => {
   const handleCancelar = () => {
     actualizarFormData({ conductor: null });
     setCurrentStep(3);
@@ -19,7 +19,8 @@ const PrincipalSelector = ({ formData, seleccionarConductor, nextStep, actualiza
         : <WaitingScreen 
             onCancelar={handleCancelar}
             actualizarFormData={actualizarFormData}
-            formData={formData} />
+            formData={formData}
+            userData={userData} />
       }
     </>
   );
