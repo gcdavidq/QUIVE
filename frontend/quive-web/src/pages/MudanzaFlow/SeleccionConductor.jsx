@@ -46,7 +46,7 @@ const SeleccionConductor = ({ nextStep, seleccionarConductor, formData }) => {
           <p className="text-gray-600 mb-6">Puedes seleccionar un conductor tú mismo.</p>
 
           <button
-            onClick={() => {nextStep(4);}}
+            onClick={() => {nextStep();}}
             className="bg-orange-500 text-white px-8 py-3 rounded-lg font-medium hover:bg-orange-600 transition-colors"
           >
             BUSCAR MANUALMENTE

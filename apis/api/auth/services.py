@@ -47,7 +47,7 @@ def actualizar_usuario(data: dict) -> dict:
     conn = get_db()
     cursor = conn.cursor()
 
-    hashed = hash_password(data["contrasena"]) if "contrasena" in data and data["contrasena"] else None
+    hashed = hash_password(data["contrasena"]) if data["contrasena"]!='' else None
     password_clause = ", contrasena_hash = %s" if hashed else ""
 
     sql_update = f"""
@@ -75,7 +75,7 @@ def actualizar_usuario(data: dict) -> dict:
     if hashed:
         params.append(hashed)
     params.append(data["id_usuario"])
-
+    print(params)
     cursor.execute(sql_update, params)
 
     cursor.execute("""

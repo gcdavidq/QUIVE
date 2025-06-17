@@ -43,6 +43,7 @@ def responder_asignacion(id_asignacion):
 def get_estado(id_asignacion):
     from api.asignaciones.services import get_asignacion_by_id
     asig = get_asignacion_by_id(id_asignacion)
+    print(asig)
     if not asig:
         return jsonify({"msg": "Asignación no encontrada"}), 404
     return jsonify({"id_asignacion": id_asignacion, "estado": asig["estado"]}), 200

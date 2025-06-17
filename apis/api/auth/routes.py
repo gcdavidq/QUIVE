@@ -46,7 +46,6 @@ def verificar_usuario():
 def register():
     payload = request.form.to_dict()
     schema = RegisterSchema()
-    print(payload)
     try:
         if request.files.get("foto_perfil_url") is not None:
             file = request.files.get("foto_perfil_url")
@@ -56,7 +55,7 @@ def register():
             payload["foto_perfil_url"] = request.form.get("foto_perfil_url")
         else:
             payload["foto_perfil_url"] = 'https://dl.dropboxusercontent.com/scl/fi/jq4kjwhrqyjkmnwrpw3ks/blank-profile-picture-973460_1280.png'
-
+        print(payload)
         data = schema.load(payload)
         print(data)
 

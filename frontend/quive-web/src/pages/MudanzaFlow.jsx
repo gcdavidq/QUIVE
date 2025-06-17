@@ -9,9 +9,17 @@ import MetodosPago from './MudanzaFlow/MetodosPago';
 import { ArrowLeft } from 'lucide-react';
 
 const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
-  const [currentStep, setCurrentStep] = useState(() =>
-    userData?.formularioMudanza?.conductor ? 4 : 1
-  );
+  const [currentStep, setCurrentStep] = useState(() => {
+    const form = userData?.formularioMudanza;
+
+    if (form?.asignacion?.estado === 'confirmado') {
+      return 5;
+    } else if (form?.conductor) {
+      return 4;
+    } else {
+      return 1;
+    }
+  });
   const initialFormData = {
     id_solicitud: '',
     origen: '',
@@ -40,16 +48,16 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
 
   const [nuevoObjeto, setNuevoObjeto] = useState({});
 
-  const nextStep = (val) => {
-    if ((currentStep === 3 || currentStep === 4) && formData.conductor) {
-      // Si ya hay conductor y estamos en paso 3 o 4, forzar quedarse en paso 4
+  const nextStep = () => {
+    if (formData.conductor && !formData.asignacion?.id_asignacion) {
+      // Si ya hay conductor, forzar quedarse en paso 4
       setCurrentStep(4);
       return;
     }
 
-    if (!formData.conductor && currentStep < 5) {
+    if (currentStep < 5) {
       // Si no hay conductor, avanzar normalmente
-      setCurrentStep(val || currentStep + 1);
+      setCurrentStep(currentStep + 1);
       return;
     }
 
@@ -59,7 +67,7 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
 
   const prevStep = () => currentStep > 1 && setCurrentStep(currentStep - 1);
   const volver = () => {
-    if (currentStep === 4 && formData.conductor) {
+    if (currentStep >= 4 && formData.conductor) {
       // Si ya se seleccionó un conductor, solo se puede volver al inicio
       setActiveTab('inicio');
       return;
@@ -147,7 +155,7 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
             nextStep={nextStep}
             formData={formData}
             actualizarFormData={actualizarFormData}
-            setCurrentStep={setCurrentStep}
+            prevStep={prevStep}
             userData={userData}
           />
         )}
