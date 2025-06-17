@@ -1,11 +1,58 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Loader2 } from "lucide-react";
 
 const WaitingScreen = ({ onCancelar, actualizarFormData, formData, userData }) => {
+  const asignacionCreadaRef = useRef(false); // 🔐 flag de control
+  const pollingRef = useRef(null); // 📡 referencia para el setInterval
+
   useEffect(() => {
-    let pollingInterval;
+    const iniciarMonitoreo = (id_asignacion) => {
+      console.log("Iniciando monitoreo de asignación:", formData);
+      pollingRef.current = setInterval(async () => {
+        try {
+          const response = await fetch(
+            `http://127.0.0.1:5000/asignaciones/${id_asignacion}/${userData.tipo_usuario}`
+          );
+          const asignaciones = await response.json();
+
+          const miAsignacion = asignaciones.find(
+            (a) => a.id_asignacion === id_asignacion
+          );
+
+          if (!miAsignacion) return;
+
+          if (miAsignacion.estado === "rechazado") {
+            clearInterval(pollingRef.current);
+            actualizarFormData({ conductor: null, asignacion: null });
+            onCancelar(); // vuelve a paso 3
+          }
+
+          if (miAsignacion.estado === "confirmado") {
+            clearInterval(pollingRef.current);
+            actualizarFormData({
+              asignacion: {
+                id_asignacion: miAsignacion.id_asignacion,
+                estado: "confirmado",
+              },
+            });
+            actualizarFormData((prev) => ({
+              ...prev,
+              avanzarPaso: true,
+            }));
+          }
+        } catch (err) {
+          console.error("Error al consultar asignaciones:", err);
+        }
+      }, 5000);
+    };
 
     const crearAsignacion = async () => {
+      if (!formData.conductor || !formData.conductor.id_transportista) {
+        console.warn("No hay conductor seleccionado. No se puede crear asignación.");
+        return;
+      }
+
+      console.log("Creando asignación con datos:", formData);
       try {
         const bodyAsignacion = {
           id_solicitud: formData.id_solicitud,
@@ -13,7 +60,6 @@ const WaitingScreen = ({ onCancelar, actualizarFormData, formData, userData }) =
           precio: formData.conductor.precio,
         };
 
-        console.log("Cuerpo de la asignación:", bodyAsignacion);
         const response = await fetch("http://127.0.0.1:5000/asignaciones", {
           method: "POST",
           headers: {
@@ -43,58 +89,19 @@ const WaitingScreen = ({ onCancelar, actualizarFormData, formData, userData }) =
         onCancelar();
       }
     };
-    console.log("Iniciando monitoreo para asignación:", userData);
-    const iniciarMonitoreo = (id_asignacion) => {
-      
-      pollingInterval = setInterval(async () => {
-        try {
-          const response = await fetch(
-            `http://127.0.0.1:5000/asignaciones/${userData.formularioMudanza.asignacion.id_asignacion}/${userData.tipo_usuario}`
-          );
-          const asignaciones = await response.json();
 
-          const miAsignacion = asignaciones.find(
-            (a) => a.id_asignacion === id_asignacion
-          );
-
-          if (!miAsignacion) return;
-
-          if (miAsignacion.estado === "rechazado") {
-            clearInterval(pollingInterval);
-            actualizarFormData({ conductor: null, asignacion: null });
-            onCancelar(); // vuelve a paso 3
-          }
-
-          if (miAsignacion.estado === "confirmado") {
-            clearInterval(pollingInterval);
-            actualizarFormData({
-              asignacion: {
-                id_asignacion: miAsignacion.id_asignacion,
-                estado: "confirmado",
-              },
-            });
-            // paso 5 automáticamente
-            actualizarFormData((prev) => ({
-              ...prev,
-              avanzarPaso: true,
-            }));
-          }
-        } catch (err) {
-          console.error("Error al consultar asignaciones:", err);
-        }
-      }, 5000);
-    };
-
-    if (!formData.asignacion?.id_asignacion) {
+    // 🔒 Proteger contra múltiples ejecuciones
+    if (!asignacionCreadaRef.current) {
+      asignacionCreadaRef.current = true;
       crearAsignacion();
-    } else {
-      iniciarMonitoreo(formData.asignacion.id_asignacion);
     }
 
     return () => {
-      clearInterval(pollingInterval);
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+      }
     };
-  }, [formData, actualizarFormData, onCancelar]);
+  }, [formData, actualizarFormData, onCancelar, userData.tipo_usuario]);
 
   return (
     <div className="fixed inset-0 flex items-center justify-center">

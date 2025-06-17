@@ -90,3 +90,17 @@ def change_estado_asignacion(id_asignacion: int, nuevo_estado: str):
         """, (id_transportista, mensaje))
     print(mensaje)
     return {"mensaje": mensaje}
+
+def delete_asignacion(id_asignacion: int) -> bool:
+    """
+    Elimina la asignación con el id dado.
+    Devuelve True si se eliminó alguna fila, False si no existía.
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "DELETE FROM Asignaciones WHERE id_asignacion = %s",
+        (id_asignacion,)
+    )
+    conn.commit()
+    return cursor.rowcount > 0

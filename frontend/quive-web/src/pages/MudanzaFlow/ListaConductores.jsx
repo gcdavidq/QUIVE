@@ -14,8 +14,9 @@ const ListaConductores = ({ nextStep, seleccionarConductor, formData }) => {
         const data = await response.json();
 
         const nuevos = data.map((c) => ({
-          id: c.id_transportista,
+          id_transportista: c.id_transportista,
           nombre: c.nombre_completo,
+          foto: c.foto_perfil_url,
           status: 'DISPONIBLE',
           color: 'green',
           precio: parseFloat(c.precio_estimado_total).toFixed(2),
@@ -55,12 +56,16 @@ const ListaConductores = ({ nextStep, seleccionarConductor, formData }) => {
         <div className="space-y-4">
           {conductores.map((c) => (
             <div
-              key={c.id}
+              key={c.id_transportista}
               className="border border-gray-200 rounded-lg p-4 flex items-center justify-between hover:shadow-md transition-shadow"
             >
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <span className="text-blue-300 text-xl">🚛</span>
+                  <img
+                    src={c.foto}
+                    alt="Avatar"
+                    className="w-16 h-16 object-cover rounded-full"
+                  />
                 </div>
                 <div>
                   <h4 className="font-bold text-blue-900">{c.nombre}</h4>
@@ -107,6 +112,7 @@ const ListaConductores = ({ nextStep, seleccionarConductor, formData }) => {
                 <button
                   onClick={() => {
                     if (c.status === 'DISPONIBLE') {
+                      console.log('Seleccionando conductor:', c);
                       seleccionarConductor(c);
                       nextStep(4);
                     } else {

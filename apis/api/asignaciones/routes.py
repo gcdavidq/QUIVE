@@ -2,7 +2,8 @@ from flask import Blueprint, request, jsonify
 from api.asignaciones.services import (
     list_my_asignaciones,
     create_asignacion,
-    change_estado_asignacion
+    change_estado_asignacion,
+    delete_asignacion
 )
 from api.asignaciones.schemas import CrearAsignacionSchema
 from marshmallow import ValidationError
@@ -21,6 +22,7 @@ def post_asignacion():
     print(payload)
     try:
         data = schema.load(payload)
+        print(data)
     except ValidationError as err:
         return jsonify({"errors": err.messages}), 400
 
@@ -44,3 +46,11 @@ def get_estado(id_asignacion):
     if not asig:
         return jsonify({"msg": "Asignación no encontrada"}), 404
     return jsonify({"id_asignacion": id_asignacion, "estado": asig["estado"]}), 200
+
+@asignaciones_bp.route("/<int:id_asignacion>", methods=["DELETE"])
+def borrar_asignacion(id_asignacion):
+    eliminado = delete_asignacion(id_asignacion)
+    if eliminado:
+        return jsonify({"mensaje": "Asignación eliminada correctamente."}), 200
+    else:
+        return jsonify({"msg": "Asignación no encontrada."}), 404

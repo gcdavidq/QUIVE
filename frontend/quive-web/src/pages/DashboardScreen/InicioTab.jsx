@@ -2,6 +2,7 @@ import React from 'react';
 import {Shield, Clock, MapPin, Package} from 'lucide-react';
 
 const InicioTab = ({ userData, setActiveTab}) => {
+  console.log('userData en InicioTab:', userData);
   return(
     <>
     {/* Welcome Card */}

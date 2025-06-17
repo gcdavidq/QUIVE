@@ -267,7 +267,7 @@ const CaracteristicasObjetos = ({
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
                   errors.cantidad ? 'border-red-500' : 'border-gray-300'
                 }`}
-                value={nuevoObjeto.cantidad}
+                value={nuevoObjeto.cantidad || '1'}
                 onChange={handleCantidadChange}
               />
               {errors.cantidad && <p className="text-red-500 text-sm mt-1">{errors.cantidad}</p>}

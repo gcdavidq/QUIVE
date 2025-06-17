@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Bell, X, MapPin, User } from 'lucide-react';
+import { Bell, X, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 

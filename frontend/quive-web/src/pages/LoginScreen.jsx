@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowLeft, AlertCircle } from 'lucide-react';
 
 const LoginScreen = ({ onNavigate, setUserData }) => {
   const [formData, setFormData] = useState({ identificador: '', password: '' });

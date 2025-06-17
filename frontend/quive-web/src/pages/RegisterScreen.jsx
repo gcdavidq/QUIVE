@@ -4,32 +4,33 @@ import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import UbicacionPeru from "./Registerutils/address";
 import SubidaDocumentos from './Registerutils/documentos';
 import TarifasForm from './Registerutils/tarifas';
-import SubirImagen from './utils/SubirImagen'
+import SubirImagen from './utils/SubirImagen';
+import CodigoVerificacion from './Registerutils/CodigoVerificacion';
+import { generateCode, sendEmailFake } from './Registerutils/verificationUtils';
 
-
-const RegisterScreen = ({onNavigate, setUserData}) => {
-    const [direccion, setUbicacion] = useState({
-      departamento: "",
-      provincia: "",
-      distrito: "",
-      tipoVia: "",
-      nombreVia: "",
-      numero: ""
-    });
-    const [documentos, setDocumentos] = useState({
-      licencia_conducir: null,
-      tarjeta_propiedad: null,
-      certificado_itv: null,
-    });
-    const [tarifas, setTarifas] = useState({
-      precio_por_m3: '',
-      precio_por_kg: '',
-      precio_por_km: '',
-      recargo_fragil: '',
-      recargo_embalaje: ''
-    });
-    const [tiposVehiculo, setTiposVehiculo] = useState([]);
-    const [formData, setFormData] = useState({
+const RegisterScreen = ({ onNavigate, setUserData }) => {
+  const [direccion, setUbicacion] = useState({
+    departamento: "",
+    provincia: "",
+    distrito: "",
+    tipoVia: "",
+    nombreVia: "",
+    numero: ""
+  });
+  const [documentos, setDocumentos] = useState({
+    licencia_conducir: null,
+    tarjeta_propiedad: null,
+    certificado_itv: null,
+  });
+  const [tarifas, setTarifas] = useState({
+    precio_por_m3: '',
+    precio_por_kg: '',
+    precio_por_km: '',
+    recargo_fragil: '',
+    recargo_embalaje: ''
+  });
+  const [tiposVehiculo, setTiposVehiculo] = useState([]);
+  const [formData, setFormData] = useState({
     nombre: '',
     email: '',
     telefono: '',
@@ -42,10 +43,13 @@ const RegisterScreen = ({onNavigate, setUserData}) => {
     tipoUsuario: 'cliente'
   });
 
-  const [fotoPerfil, setFotoPerfil] = useState(null);
+  const [fotoPerfil, setFotoPerfil] = useState('https://dl.dropboxusercontent.com/scl/fi/jq4kjwhrqyjkmnwrpw3ks/blank-profile-picture-973460_1280.png?rlkey=ol5z7dhlc0nc6mvtff2r680sr&st=i5vppvhq');
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [showVerification, setShowVerification] = useState(false);
+  const [codigoVerificacion, setCodigoVerificacion] = useState('');
 
   useEffect(() => {
     axios.get('http://127.0.0.1:5000/vehiculos/tipos-vehiculo')
@@ -57,11 +61,8 @@ const RegisterScreen = ({onNavigate, setUserData}) => {
       });
   }, []);
 
-  const [errors, setErrors] = useState({});
-
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    // Clear error when user starts typing
     if (errors[e.target.name]) {
       setErrors({ ...errors, [e.target.name]: '' });
     }
@@ -69,11 +70,11 @@ const RegisterScreen = ({onNavigate, setUserData}) => {
 
   const validateForm = () => {
     const newErrors = {};
-
     if (!formData.nombre.trim()) newErrors.nombre = 'El nombre es requerido';
     if (!formData.email.trim()) newErrors.email = 'El email es requerido';
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email inválido';
     if (!formData.telefono.trim()) newErrors.telefono = 'El teléfono es requerido';
+    else if (!/^9\d{8}$/.test(formData.telefono)) newErrors.telefono = 'Debe comenzar con 9 y tener 9 dígitos';
     if (!formData.dni.trim()) newErrors.dni = 'El DNI es requerido';
     if (!formData.password) newErrors.password = 'La contraseña es requerida';
     else if (formData.password.length < 6) newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
@@ -89,18 +90,42 @@ const RegisterScreen = ({onNavigate, setUserData}) => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
     if (!validateForm()) return;
-    const {
-      departamento,
-      provincia,
-      distrito,
-      tipoVia,
-      nombreVia,
-      numero,
-      lat,
-      lng
-    } = direccion ;
+
+    try {
+      // Verificar existencia antes de generar código
+      const res = await fetch("http://127.0.0.1:5000/auth/verificar-usuario", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          telefono: formData.telefono,
+          dni: formData.dni
+        })
+      });
+
+      const result = await res.json();
+
+      if (result.existe) {
+        alert("Ya existe un usuario con este email, DNI o teléfono.");
+        return;
+      }
+
+      const codigo = generateCode();
+      setCodigoVerificacion(codigo);
+      await sendEmailFake(formData.email, codigo);
+      setShowVerification(true);
+    } catch (error) {
+      console.error("Error verificando usuario existente:", error);
+      alert("No se pudo verificar si el usuario ya existe. Intente nuevamente.");
+    }
+  };
+
+  const continuarRegistro = async () => {
+    const { departamento, provincia, distrito, tipoVia, nombreVia, numero, lat, lng } = direccion;
     const formPayload = new FormData();
     formPayload.append("nombre_completo", formData.nombre);
     formPayload.append("email", formData.email);
@@ -120,101 +145,49 @@ const RegisterScreen = ({onNavigate, setUserData}) => {
       });
 
       const data = await response.json();
+      if (!response.ok) return alert(data.msg || "Ocurrió un error al registrar.");
 
-      if (!response.ok) {
-        if (data.errors) {
-          setErrors(data.errors);
-        } else if (data.msg) {
-          alert(data.msg);
-        } else {
-          alert("Ocurrió un error al registrar.");
-        }
-        return;
-      }
       if (formData.tipoUsuario === "transportista") {
-        const documentosPayload = new FormData();
         const vehiculoPayload = new FormData();
+        vehiculoPayload.append("id_usuario", data.usuario.id_usuario);
+        vehiculoPayload.append("placa", formData.placa);
+        vehiculoPayload.append("id_tipo_vehiculo", formData.tipoVehiculo);
 
-        try {
-          vehiculoPayload.append("id_usuario", data.usuario.id_usuario);
-          vehiculoPayload.append("placa", formData.placa);
-          vehiculoPayload.append("id_tipo_vehiculo", formData.tipoVehiculo);
-          const VehResponse = await fetch("http://127.0.0.1:5000/vehiculos/me", {
-            method: "POST",
-            credentials: "include",
-            body: vehiculoPayload,
-          });
+        await fetch("http://127.0.0.1:5000/vehiculos/me", {
+          method: "POST",
+          credentials: "include",
+          body: vehiculoPayload,
+        });
 
-          const vehData = await VehResponse.json();
+        const documentosPayload = new FormData();
+        documentosPayload.append("licencia_conducir_url", documentos.licencia_conducir);
+        documentosPayload.append("tarjeta_propiedad_url", documentos.tarjeta_propiedad);
+        documentosPayload.append("certificado_itv_url", documentos.certificado_itv);
+        documentosPayload.append("id_usuario", data.usuario.id_usuario);
 
-          if (!VehResponse.ok) {
-            console.error("Error al registrar vehículo:", vehData);
-            alert("Ocurrió un error al registrar el vehículo.");
-            return; // ❌ Detiene el flujo
-          }
-        } catch (error) {
-          console.error("Error al conectar con la API de vehículo:", error);
-          alert("Ocurrió un error al enviar los datos del vehículo.");
-          return;
-        }
+        await fetch("http://127.0.0.1:5000/transportistas/me/documentos", {
+          method: "POST",
+          credentials: "include",
+          body: documentosPayload,
+        });
 
-        try {
-          documentosPayload.append("licencia_conducir_url", documentos.licencia_conducir);
-          documentosPayload.append("tarjeta_propiedad_url", documentos.tarjeta_propiedad);
-          documentosPayload.append("certificado_itv_url", documentos.certificado_itv);
-          documentosPayload.append("id_usuario", data.usuario.id_usuario);
+        const tarifaPayload = {
+          id_transportista: data.usuario.id_usuario,
+          precio_por_m3: parseFloat(tarifas.precio_por_m3),
+          precio_por_kg: parseFloat(tarifas.precio_por_kg),
+          precio_por_km: parseFloat(tarifas.precio_por_km),
+          recargo_fragil: parseFloat(tarifas.recargo_fragil) || 0.0,
+          recargo_embalaje: parseFloat(tarifas.recargo_embalaje) || 0.0,
+        };
 
-          const docResponse = await fetch("http://127.0.0.1:5000/transportistas/me/documentos", {
-            method: "POST",
-            credentials: "include",
-            body: documentosPayload,
-          });
-
-          const docData = await docResponse.json();
-
-          if (!docResponse.ok) {
-            console.error("Error al subir documentos:", docData);
-            alert("Ocurrió un error al subir los documentos.");
-            return;
-          }
-        } catch (error) {
-          console.error("Error al conectar con la API de documentos:", error);
-          alert("Ocurrió un error al enviar los documentos.");
-          return;
-        }
-
-        try {
-          const tarifaPayload = {
-            id_transportista: data.usuario.id_usuario,
-            precio_por_m3: parseFloat(tarifas.precio_por_m3),
-            precio_por_kg: parseFloat(tarifas.precio_por_kg),
-            precio_por_km: parseFloat(tarifas.precio_por_km),
-            recargo_fragil: parseFloat(tarifas.recargo_fragil) || 0.0,
-            recargo_embalaje: parseFloat(tarifas.recargo_embalaje) || 0.0,
-          };
-
-          const tarifaResponse = await fetch("http://127.0.0.1:5000/transportistas/me/tarifa", {
-            method: "POST",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(tarifaPayload),
-          });
-
-          const tarifaData = await tarifaResponse.json();
-
-          if (!tarifaResponse.ok) {
-            console.error("Error al registrar tarifas:", tarifaData);
-            alert("Ocurrió un error al registrar las tarifas.");
-            return;
-          }
-        } catch (error) {
-          console.error("Error al conectar con la API de tarifas:", error);
-          alert("Ocurrió un error al enviar los datos de tarifas.");
-          return;
-        }
+        await fetch("http://127.0.0.1:5000/transportistas/me/tarifa", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(tarifaPayload),
+        });
       }
+
       setUserData(data.usuario);
       onNavigate("registroExitoso");
     } catch (error) {
@@ -223,6 +196,17 @@ const RegisterScreen = ({onNavigate, setUserData}) => {
     }
   };
 
+  if (showVerification) {
+    return (
+      <CodigoVerificacion
+        email={formData.email}
+        codigoGenerado={codigoVerificacion}
+        onVerificado={continuarRegistro}
+        onReintentar={() => setShowVerification(false)}
+      />
+    );
+  }
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
@@ -310,30 +294,29 @@ const RegisterScreen = ({onNavigate, setUserData}) => {
                 <input
                   type="tel"
                   name="telefono"
-                  placeholder="Teléfono"
+                  placeholder="telefono"
                   value={formData.telefono}
-                  maxlength="9"
+                  maxLength={9}
                   onChange={(e) => {
                     const value = e.target.value;
-                    if (/^\d*$/.test(value)) {  // Solo permite números
+                    if (/^\d{0,9}$/.test(value)) {
                       handleInputChange(e);
                     }
                   }}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  className={`w-full px-4 py-3 border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     errors.telefono ? 'border-red-500' : 'border-gray-200'
                   }`}
                 />
                 {errors.telefono && <p className="text-red-500 text-sm mt-1">{errors.telefono}</p>}
               </div>
             </div>
-
             <div>
               <input
                 type="text"
                 name="dni"
                 placeholder="DNI"
                 value={formData.dni}
-                maxlength="8"
+                maxLength={8}
                 onChange={(e) => {
                   const value = e.target.value;
                   if (/^\d*$/.test(value)) {  // Solo permite números

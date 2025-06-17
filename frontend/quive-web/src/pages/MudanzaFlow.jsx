@@ -1,5 +1,5 @@
 // Archivo principal: MudanzaFlow.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import StepIndicator from './MudanzaFlow/StepIndicator';
 import DetallesMudanza from './MudanzaFlow/DetallesMudanza';
 import CaracteristicasObjetos from './MudanzaFlow/CaracteristicasObjetos';
@@ -29,12 +29,6 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
   };
   const [formData, setFormData] = useState(initialFormData);
 
-  useEffect(() => {
-    if (formData.avanzarPaso) {
-      setCurrentStep(5); // ir directamente a método de pago
-      actualizarFormData({ avanzarPaso: false }); // limpiar el flag
-    }
-  }, [formData.avanzarPaso]);
   const actualizarFormData = (cambios) => {
     const nuevo = { ...formData, ...cambios };
     setFormData(nuevo);

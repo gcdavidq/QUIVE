@@ -58,7 +58,11 @@ const SeleccionConductor = ({ nextStep, seleccionarConductor, formData }) => {
 
           <div className="text-center mb-6">
             <div className="w-24 h-24 bg-blue-100 rounded-lg mx-auto mb-4 flex items-center justify-center">
-              <span className="text-4xl text-blue-300">👤</span>
+              <img
+                src={conductorRecomendado.foto}
+                alt="Avatar"
+                className="w-16 h-16 object-cover rounded-full"
+              />
             </div>
 
             <h4 className="text-xl font-bold text-blue-900 mb-2">{conductorRecomendado.nombre}</h4>
@@ -111,6 +115,7 @@ const SeleccionConductor = ({ nextStep, seleccionarConductor, formData }) => {
 
           <button
             onClick={() => {
+              console.log("Conductor seleccionado:", conductorRecomendado);
               seleccionarConductor(conductorRecomendado);
               nextStep();
             }}

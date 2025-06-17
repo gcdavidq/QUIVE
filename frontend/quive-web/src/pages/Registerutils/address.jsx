@@ -165,8 +165,8 @@ const UbicacionPeru = ({ direccion, setUbicacion }) => {
       tipoVia: tipoViaNuevo,
       nombreVia: nombreViaNuevo,
       numero: numeroEncontrado,
-      lat: parseFloat(lat),
-      lng: parseFloat(lon),
+      lat: parseFloat(lat)|| "",
+      lng: parseFloat(lon)|| "",
     });
 
     setPositionSeleccionada([parseFloat(lat), parseFloat(lon)]);

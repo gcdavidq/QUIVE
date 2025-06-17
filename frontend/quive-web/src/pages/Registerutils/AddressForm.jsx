@@ -88,7 +88,7 @@ const AddressForm = ({
           <label style={inputStyles.label}>Departamento:</label>
           <Select
             options={toOptions(departamentos)}
-            value={getOptionValue(departamentos, direccion.departamento)}
+            value={getOptionValue(departamentos, direccion.departamento) || ""}
             onChange={(selected) =>
               setUbicacion({
                 ...direccion,
@@ -109,7 +109,7 @@ const AddressForm = ({
           <label style={inputStyles.label}>Provincia:</label>
           <Select
             options={toOptions(provincias)}
-            value={getOptionValue(provincias, direccion.provincia)}
+            value={getOptionValue(provincias, direccion.provincia) || ""}
             onChange={(selected) =>
               setUbicacion({
                 ...direccion,
@@ -130,7 +130,7 @@ const AddressForm = ({
           <label style={inputStyles.label}>Distrito:</label>
           <Select
             options={toOptions(distritos)}
-            value={getOptionValue(distritos, direccion.distrito)}
+            value={getOptionValue(distritos, direccion.distrito) || ""}
             onChange={(selected) =>
               setUbicacion({
                 ...direccion,
@@ -150,7 +150,7 @@ const AddressForm = ({
           <label style={inputStyles.label}>Tipo de vía:</label>
           <Select
             options={toOptions(tiposVia)}
-            value={getOptionValue(tiposVia, direccion.tipoVia)}
+            value={getOptionValue(tiposVia, direccion.tipoVia) || ""}
             onChange={(selected) =>
               setUbicacion({
                 ...direccion,
@@ -172,7 +172,7 @@ const AddressForm = ({
           <input
             type="text"
             style={inputStyles.input}
-            value={direccion.nombreVia}
+            value={direccion.nombreVia || ""}
             onChange={(e) =>
               setUbicacion({
                 ...direccion,
@@ -193,7 +193,7 @@ const AddressForm = ({
           <input
             type="number"
             style={inputStyles.input}
-            value={direccion.numero}
+            value={direccion.numero || ""}
             onChange={(e) =>
               setUbicacion({
                 ...direccion,

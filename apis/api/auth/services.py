@@ -4,79 +4,85 @@ from google.auth.transport import requests
 from google.oauth2 import id_token
 import os
 
-def register_or_update_user(data: dict) -> dict:
-    """
-    Inserta o actualiza un usuario en la tabla Usuarios según si 'id_usuario' está presente.
-    Retorna el usuario actualizado o insertado (sin contrasena_hash).
-    """
+def verificar_existencia_usuario(email: str, dni: str, telefono: str) -> bool:
+    """Verifica si ya existe un usuario con el mismo email, DNI o teléfono."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id_usuario FROM Usuarios
+        WHERE email = %s OR dni = %s OR telefono = %s
+    """, (email, dni, telefono))
+    return cursor.fetchone() is not None
+
+def registrar_usuario(data: dict) -> dict:
+    """Registra un nuevo usuario y devuelve sus datos (sin contraseña)."""
+    if verificar_existencia_usuario(data["email"], data["dni"], data["telefono"]):
+        return {"error": "Email, DNI o teléfono ya registrados"}
+
+    conn = get_db()
+    cursor = conn.cursor()
+    hashed = hash_password(data["contrasena"])
+
+    cursor.execute("""
+        INSERT INTO Usuarios
+        (nombre_completo, email, telefono, dni, contrasena_hash, Ubicacion, tipo_usuario, foto_perfil_url)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    """, (
+        data["nombre_completo"], data["email"], data["telefono"], data["dni"],
+        hashed, data["ubicacion"], data["tipo_usuario"], data["foto_perfil_url"]
+    ))
+    user_id = cursor.lastrowid
+
+    cursor.execute("""
+        SELECT id_usuario, nombre_completo, email, telefono, dni, Ubicacion, tipo_usuario, fecha_registro, estado_cuenta, foto_perfil_url
+        FROM Usuarios WHERE id_usuario=%s
+    """, (user_id,))
+    return {"usuario": cursor.fetchone()}
+
+def actualizar_usuario(data: dict) -> dict:
+    """Actualiza los datos de un usuario existente y devuelve los datos actualizados."""
+    if "id_usuario" not in data or not data["id_usuario"]:
+        return {"error": "Se requiere id_usuario para actualizar."}
+
     conn = get_db()
     cursor = conn.cursor()
 
     hashed = hash_password(data["contrasena"]) if "contrasena" in data and data["contrasena"] else None
+    password_clause = ", contrasena_hash = %s" if hashed else ""
 
-    if "id_usuario" in data and data["id_usuario"]:
-        # Actualizar usuario existente
-        user_id = data["id_usuario"]
-        sql_update = """
-            UPDATE Usuarios
-            SET nombre_completo = %s,
-                email = %s,
-                telefono = %s,
-                dni = %s,
-                Ubicacion = %s,
-                tipo_usuario = %s,
-                foto_perfil_url = %s
-                {password_clause}
-            WHERE id_usuario = %s
-        """.format(
-            password_clause = ", contrasena_hash = %s" if hashed else ""
-        )
+    sql_update = f"""
+        UPDATE Usuarios
+        SET nombre_completo = %s,
+            email = %s,
+            telefono = %s,
+            dni = %s,
+            Ubicacion = %s,
+            tipo_usuario = %s,
+            foto_perfil_url = %s
+            {password_clause}
+        WHERE id_usuario = %s
+    """
 
-        params = [
-            data["nombre_completo"],
-            data["email"],
-            data["telefono"],
-            data["dni"],
-            data["ubicacion"],
-            data["tipo_usuario"],
-            data["foto_perfil_url"]
-        ]
-        if hashed:
-            params.append(hashed)
-        params.append(user_id)
+    params = [
+        data["nombre_completo"],
+        data["email"],
+        data["telefono"],
+        data["dni"],
+        data["ubicacion"],
+        data["tipo_usuario"],
+        data["foto_perfil_url"]
+    ]
+    if hashed:
+        params.append(hashed)
+    params.append(data["id_usuario"])
 
-        cursor.execute(sql_update, params)
-    else:
-        # Registrar nuevo usuario
-        sql_check = """
-            SELECT id_usuario FROM Usuarios
-            WHERE email = %s OR dni = %s OR telefono = %s
-        """
-        cursor.execute(sql_check, (data["email"], data["dni"], data["telefono"]))
-        if cursor.fetchone():
-            return {"error": "Email, DNI o teléfono ya registrados"}
+    cursor.execute(sql_update, params)
 
-        sql_insert = """
-            INSERT INTO Usuarios
-            (nombre_completo, email, telefono, dni, contrasena_hash, Ubicacion, tipo_usuario, foto_perfil_url)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        """
-        cursor.execute(sql_insert, (
-            data["nombre_completo"], data["email"], data["telefono"], data["dni"],
-            hashed, data["ubicacion"], data["tipo_usuario"], data["foto_perfil_url"]
-        ))
-        user_id = cursor.lastrowid
-
-    # Obtener y devolver el usuario actualizado o creado (sin contraseña)
-    sql_get = """
+    cursor.execute("""
         SELECT id_usuario, nombre_completo, email, telefono, dni, Ubicacion, tipo_usuario, fecha_registro, estado_cuenta, foto_perfil_url
         FROM Usuarios WHERE id_usuario=%s
-    """
-    cursor.execute(sql_get, (user_id,))
-    usuario = cursor.fetchone()
-    return {
-        "usuario": usuario
-    }
+    """, (data["id_usuario"],))
+    return {"usuario": cursor.fetchone()}
 
 
 def login_user(data: dict) -> dict:
