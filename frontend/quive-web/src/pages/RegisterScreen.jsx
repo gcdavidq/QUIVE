@@ -1,458 +1,84 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
-import UbicacionPeru from "./Registerutils/address";
-import SubidaDocumentos from './Registerutils/documentos';
-import TarifasForm from './Registerutils/tarifas';
-import SubirImagen from './utils/SubirImagen';
-import CodigoVerificacion from './Registerutils/CodigoVerificacion';
-import { generateCode, sendEmailFake } from './Registerutils/verificationUtils';
+import React, { useState } from 'react';
+import Paso1DatosUsuario from './Registerutils/StepsRegister/Paso1DatosUsuario';
+import Paso2VerificacionCorreo from './Registerutils/StepsRegister/Paso2VerificacionCorreo';
+import Paso3DireccionFoto from './Registerutils/StepsRegister/Paso3DireccionFoto';
+import Paso4VehiculoDocumentos from './Registerutils/StepsRegister/Paso4VehiculoDocumentos';
+import Paso5Tarifas from './Registerutils/StepsRegister/Paso5Tarifas';
+import Paso6ResumenFinal from './Registerutils/StepsRegister/Paso6ResumenFinal';
+import { ArrowLeft } from 'lucide-react';
+
 
 const RegisterScreen = ({ onNavigate, setUserData }) => {
-  const [direccion, setUbicacion] = useState({
-    departamento: "",
-    provincia: "",
-    distrito: "",
-    tipoVia: "",
-    nombreVia: "",
-    numero: ""
-  });
-  const [documentos, setDocumentos] = useState({
-    licencia_conducir: null,
-    tarjeta_propiedad: null,
-    certificado_itv: null,
-  });
-  const [tarifas, setTarifas] = useState({
-    precio_por_m3: '',
-    precio_por_kg: '',
-    precio_por_km: '',
-    recargo_fragil: '',
-    recargo_embalaje: ''
-  });
-  const [tiposVehiculo, setTiposVehiculo] = useState([]);
+  const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
-    nombre: '',
-    email: '',
-    telefono: '',
-    dni: '',
-    password: '',
-    confirmPassword: '',
-    placa: '',
-    tipoVehiculo: '',
-    direccion: '',
-    tipoUsuario: 'cliente'
+    nombre: '', email: '', telefono: '', dni: '', password: '', confirmPassword: '',
+    tipoUsuario: 'cliente', placa: '', tipoVehiculo: ''
   });
-
-  const [fotoPerfil, setFotoPerfil] = useState('https://dl.dropboxusercontent.com/scl/fi/jq4kjwhrqyjkmnwrpw3ks/blank-profile-picture-973460_1280.png?rlkey=ol5z7dhlc0nc6mvtff2r680sr&st=i5vppvhq');
-
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [errors, setErrors] = useState({});
-  const [showVerification, setShowVerification] = useState(false);
+  const [direccion, setUbicacion] = useState({ departamento: '', provincia: '', distrito: '', tipoVia: '', nombreVia: '', numero: '' });
+  const [fotoPerfil, setFotoPerfil] = useState('https://dl.dropboxusercontent.com/scl/fi/jq4kjwhrqyjkmnwrpw3ks/blank-profile-picture-973460_1280.png');
   const [codigoVerificacion, setCodigoVerificacion] = useState('');
+  const [documentos, setDocumentos] = useState({ licencia_conducir: null, tarjeta_propiedad: null, certificado_itv: null });
+  const [tarifas, setTarifas] = useState({ precio_por_m3: '', precio_por_kg: '', precio_por_km: '', recargo_fragil: '', recargo_embalaje: '' });
 
-  useEffect(() => {
-    axios.get('http://127.0.0.1:5000/vehiculos/tipos-vehiculo')
-      .then(response => {
-        setTiposVehiculo(response.data);
-      })
-      .catch(error => {
-        console.error('Error al obtener tipos de vehículo:', error);
-      });
-  }, []);
+  const steps = [1, 2, 3, 4, 5, 6];
 
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    if (errors[e.target.name]) {
-      setErrors({ ...errors, [e.target.name]: '' });
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-    if (!formData.nombre.trim()) newErrors.nombre = 'El nombre es requerido';
-    if (!formData.email.trim()) newErrors.email = 'El email es requerido';
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email inválido';
-    if (!formData.telefono.trim()) newErrors.telefono = 'El teléfono es requerido';
-    else if (!/^9\d{8}$/.test(formData.telefono)) newErrors.telefono = 'Debe comenzar con 9 y tener 9 dígitos';
-    if (!formData.dni.trim()) newErrors.dni = 'El DNI es requerido';
-    if (!formData.password) newErrors.password = 'La contraseña es requerida';
-    else if (formData.password.length < 6) newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
-    if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Las contraseñas no coinciden';
-
-    if (formData.tipoUsuario === 'transportista') {
-      if (!formData.placa.trim()) newErrors.placa = 'La placa es requerida';
-      if (!formData.tipoVehiculo.trim()) newErrors.tipoVehiculo = 'El tipo de vehículo es requerido';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e) => {
-  e.preventDefault();
-    if (!validateForm()) return;
-
-    try {
-      // Verificar existencia antes de generar código
-      const res = await fetch("http://127.0.0.1:5000/auth/verificar-usuario", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          telefono: formData.telefono,
-          dni: formData.dni
-        })
-      });
-
-      const result = await res.json();
-
-      if (result.existe) {
-        alert("Ya existe un usuario con este email, DNI o teléfono.");
-        return;
+  const volverPaso = () => {
+    if (currentStep > 1) {
+      if (formData.tipoUsuario === 'cliente' && currentStep === 6) {
+        setCurrentStep(3);
+      } else {
+        setCurrentStep(currentStep - 1);
       }
-
-      const codigo = generateCode();
-      setCodigoVerificacion(codigo);
-      await sendEmailFake(formData.email, codigo);
-      setShowVerification(true);
-    } catch (error) {
-      console.error("Error verificando usuario existente:", error);
-      alert("No se pudo verificar si el usuario ya existe. Intente nuevamente.");
     }
   };
 
-  const continuarRegistro = async () => {
-    const { departamento, provincia, distrito, tipoVia, nombreVia, numero, lat, lng } = direccion;
-    const formPayload = new FormData();
-    formPayload.append("nombre_completo", formData.nombre);
-    formPayload.append("email", formData.email);
-    formPayload.append("telefono", formData.telefono);
-    formPayload.append("dni", parseInt(formData.dni));
-    formPayload.append("contrasena", formData.password);
-    formPayload.append("tipo_usuario", formData.tipoUsuario);
-    const ubicacion = `${tipoVia} ${nombreVia} ${numero}, ${distrito}, ${provincia}, ${departamento}, Peru; ${lat}, ${lng}`;
-    formPayload.append("ubicacion", ubicacion);
-    formPayload.append("foto_perfil_url", fotoPerfil || "null");
-
-    try {
-      const response = await fetch("http://127.0.0.1:5000/auth/register", {
-        method: "POST",
-        credentials: "include",
-        body: formPayload,
-      });
-
-      const data = await response.json();
-      if (!response.ok) return alert(data.msg || "Ocurrió un error al registrar.");
-
-      if (formData.tipoUsuario === "transportista") {
-        const vehiculoPayload = new FormData();
-        vehiculoPayload.append("id_usuario", data.usuario.id_usuario);
-        vehiculoPayload.append("placa", formData.placa);
-        vehiculoPayload.append("id_tipo_vehiculo", formData.tipoVehiculo);
-
-        await fetch("http://127.0.0.1:5000/vehiculos/me", {
-          method: "POST",
-          credentials: "include",
-          body: vehiculoPayload,
-        });
-
-        const documentosPayload = new FormData();
-        documentosPayload.append("licencia_conducir_url", documentos.licencia_conducir);
-        documentosPayload.append("tarjeta_propiedad_url", documentos.tarjeta_propiedad);
-        documentosPayload.append("certificado_itv_url", documentos.certificado_itv);
-        documentosPayload.append("id_usuario", data.usuario.id_usuario);
-
-        await fetch("http://127.0.0.1:5000/transportistas/me/documentos", {
-          method: "POST",
-          credentials: "include",
-          body: documentosPayload,
-        });
-
-        const tarifaPayload = {
-          id_transportista: data.usuario.id_usuario,
-          precio_por_m3: parseFloat(tarifas.precio_por_m3),
-          precio_por_kg: parseFloat(tarifas.precio_por_kg),
-          precio_por_km: parseFloat(tarifas.precio_por_km),
-          recargo_fragil: parseFloat(tarifas.recargo_fragil) || 0.0,
-          recargo_embalaje: parseFloat(tarifas.recargo_embalaje) || 0.0,
-        };
-
-        await fetch("http://127.0.0.1:5000/transportistas/me/tarifa", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(tarifaPayload),
-        });
-      }
-
-      setUserData(data.usuario);
-      onNavigate("registroExitoso");
-    } catch (error) {
-      console.error("Error al conectar con la API:", error);
-      alert("Error de red o servidor.");
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1:
+        return <Paso1DatosUsuario formData={formData} setFormData={setFormData} setCurrentStep={setCurrentStep} setCodigoVerificacion={setCodigoVerificacion} />;
+      case 2:
+        return <Paso2VerificacionCorreo email={formData.email} codigoGenerado={codigoVerificacion} setCurrentStep={setCurrentStep} />;
+      case 3:
+        return <Paso3DireccionFoto direccion={direccion} setUbicacion={setUbicacion} fotoPerfil={fotoPerfil} setFotoPerfil={setFotoPerfil} setCurrentStep={setCurrentStep} formData={formData} />;
+      case 4:
+        return <Paso4VehiculoDocumentos formData={formData} setFormData={setFormData} documentos={documentos} setDocumentos={setDocumentos} setCurrentStep={setCurrentStep} />;
+      case 5:
+        return <Paso5Tarifas tarifas={tarifas} setTarifas={setTarifas} setCurrentStep={setCurrentStep} />;
+      case 6:
+        return <Paso6ResumenFinal formData={formData} direccion={direccion} fotoPerfil={fotoPerfil} documentos={documentos} tarifas={tarifas} setUserData={setUserData} onNavigate={onNavigate} />;
+      default:
+        return null;
     }
   };
 
-  if (showVerification) {
-    return (
-      <CodigoVerificacion
-        email={formData.email}
-        codigoGenerado={codigoVerificacion}
-        onVerificado={continuarRegistro}
-        onReintentar={() => setShowVerification(false)}
-      />
-    );
-  }
-  
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <header className="bg-white shadow-sm p-6 flex items-center">
-        <button 
-          onClick={() => onNavigate('landing')}
-          className="mr-4 p-2 text-gray-600 hover:text-blue-600 transition-colors"
-        >
-          <ArrowLeft size={24} />
-        </button>
-        <div className="text-2xl font-bold text-blue-600">QUIVE</div>
+      <header className="bg-white shadow-sm p-6 flex items-center justify-between">
+        <div className="flex items-center">
+          <button onClick={() => onNavigate('landing')} className="mr-4 p-2 text-gray-600 hover:text-blue-600 transition-colors">
+            <ArrowLeft size={24} />
+          </button>
+          <div className="text-2xl font-bold text-blue-600">QUIVE</div>
+        </div>
+        {currentStep > 1 && (
+          <button onClick={volverPaso} className="text-sm px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">
+            Volver
+          </button>
+        )}
       </header>
 
-      {/* Main Content */}
-      <div className="flex items-center justify-center min-h-screen py-12">
-        <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
-          <div className="text-center mb-8">
-            <p className="text-gray-600 mb-2">Bienvenido a QUIVE</p>
-            <h1 className="text-3xl font-bold text-blue-600 mb-6">CREAR CUENTA</h1>
-            
-            {/* User Type Toggle */}
-            <div className="flex bg-blue-50 rounded-full p-1 mb-8">
-              <button
-                type="button"
-                onClick={() => setFormData({ ...formData, tipoUsuario: 'cliente' })}
-                className={`flex-1 py-3 px-6 rounded-full transition-colors ${
-                  formData.tipoUsuario === 'cliente' 
-                    ? 'bg-blue-600 text-white shadow-sm' 
-                    : 'text-blue-400 hover:text-blue-600'
-                }`}
-              >
-                CLIENTE
-              </button>
-              <button
-                type="button"
-                onClick={() => setFormData({ ...formData, tipoUsuario: 'transportista' })}
-                className={`flex-1 py-3 px-6 rounded-full transition-colors ${
-                  formData.tipoUsuario === 'transportista' 
-                    ? 'bg-blue-600 text-white shadow-sm' 
-                    : 'text-blue-400 hover:text-blue-600'
-                }`}
-              >
-                TRANSPORTISTA
-              </button>
-            </div>
+      <div className="flex justify-center py-4">
+        {steps.map((step, index) => (
+          <div key={step} className="flex items-center">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${currentStep === step ? 'bg-blue-600' : 'bg-gray-300'}`}>{step}</div>
+            {index < steps.length - 1 && <div className="w-12 h-1 bg-gray-300 mx-2"></div>}
           </div>
+        ))}
+      </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <SubirImagen
-              defaultPreview={null}
-              onFotoSeleccionada={(file) => setFotoPerfil(file)}
-              id_imagen={"fotoPerfil"}
-              imgClassName="w-28 h-28 rounded-full object-cover border-4 border-blue-300 shadow-md bg-white"
-            />
-
-            <div>
-              <input
-                type="text"
-                name="nombre"
-                placeholder="Nombre y Apellidos"
-                value={formData.nombre}
-                onChange={handleInputChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.nombre ? 'border-red-500' : 'border-gray-200'
-                }`}
-              />
-              {errors.nombre && <p className="text-red-500 text-sm mt-1">{errors.nombre}</p>}
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="Correo Electrónico"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.email ? 'border-red-500' : 'border-gray-200'
-                  }`}
-                />
-                {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-              </div>
-              <div>
-                <input
-                  type="tel"
-                  name="telefono"
-                  placeholder="telefono"
-                  value={formData.telefono}
-                  maxLength={9}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (/^\d{0,9}$/.test(value)) {
-                      handleInputChange(e);
-                    }
-                  }}
-                  className={`w-full px-4 py-3 border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.telefono ? 'border-red-500' : 'border-gray-200'
-                  }`}
-                />
-                {errors.telefono && <p className="text-red-500 text-sm mt-1">{errors.telefono}</p>}
-              </div>
-            </div>
-            <div>
-              <input
-                type="text"
-                name="dni"
-                placeholder="DNI"
-                value={formData.dni}
-                maxLength={8}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (/^\d*$/.test(value)) {  // Solo permite números
-                    handleInputChange(e);
-                  }
-                }}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.dni ? 'border-red-500' : 'border-gray-200'
-                }`}
-              />
-              {errors.dni && <p className="text-red-500 text-sm mt-1">{errors.dni}</p>}
-            </div>
-
-            <div>
-                <UbicacionPeru direccion ={direccion } setUbicacion={setUbicacion} />
-            </div>
-
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                placeholder="Contraseña"
-                value={formData.password}
-                onChange={handleInputChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.password ? 'border-red-500' : 'border-gray-200'
-                }`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-              >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
-            </div>
-
-            {/* Campo Confirmar Contraseña */}
-            <div className="relative mt-4">
-              <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                name="confirmPassword"
-                placeholder="Confirmar Contraseña"
-                value={formData.confirmPassword}
-                onChange={handleInputChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.confirmPassword ? 'border-red-500' : 'border-gray-200'
-                }`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword((prev) => !prev)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-              >
-                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-              {errors.confirmPassword && (
-                <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>
-              )}
-            </div>
-
-            {formData.tipoUsuario === 'transportista' && (
-              <>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <input
-                      type="text"
-                      name="placa"
-                      placeholder="Placa (ej: ABC-123)"
-                      value={formData.placa}
-                      onChange={(e) => {
-                        let raw = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""); // Solo letras y números
-                        let letters = raw.slice(0, 3).replace(/[^A-Z]/g, ""); // Solo letras en los primeros 3
-                        let numbers = raw.slice(3).replace(/[^0-9]/g, "");   // Solo números después
-
-                        let value = letters;
-                        if (letters.length === 3 && numbers.length > 0) {
-                          value += '-' + numbers.slice(0, 3); // Agrega guion y hasta 3 números
-                        }
-
-                        handleInputChange({ target: { name: 'placa', value } });
-                      }}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.placa ? 'border-red-500' : 'border-gray-200'
-                      }`}
-                      maxLength={7}
-                    />
-                    {errors.placa && <p className="text-red-500 text-sm mt-1">{errors.placa}</p>}
-                  </div>
-                  <div>
-                    <select
-                      name="tipoVehiculo"
-                      value={formData.tipoVehiculo}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.tipoVehiculo ? 'border-red-500' : 'border-gray-200'
-                      }`}
-                    >
-                      <option value="">Selecciona un tipo de vehículo</option>
-                        {tiposVehiculo.map(tipo => (
-                          <option key={tipo.id_tipo_vehiculo} value={tipo.id_tipo_vehiculo}>
-                            {tipo.nombre}
-                          </option>
-                        ))}
-                    </select>
-                    {errors.tipoVehiculo && <p className="text-red-500 text-sm mt-1">{errors.tipoVehiculo}</p>}
-                  </div>
-                </div>
-                <div>
-                    <SubidaDocumentos documentos={documentos} setDocumentos={setDocumentos} />
-                    {/* Puedes agregar botones para enviar o validar documentos aquí */}
-                </div>
-                <div>
-                    <TarifasForm tarifas={tarifas} setTarifas={setTarifas} />
-                </div>
-              </>
-            )}
-
-            <button
-              type="submit"
-              className="w-full py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
-            >
-              REGISTRARSE
-            </button>
-          </form>
-
-          <div className="text-center mt-6">
-            <p className="text-gray-600">¿Ya tienes una cuenta?</p>
-            <button
-              onClick={() => onNavigate('login')}
-              className="text-blue-600 hover:text-blue-800 font-semibold transition-colors"
-            >
-              Iniciar Sesión
-            </button>
-          </div>
+      <div className="flex items-center justify-center min-h-[60vh] py-4">
+        <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-xl">
+          {renderStep()}
         </div>
       </div>
     </div>

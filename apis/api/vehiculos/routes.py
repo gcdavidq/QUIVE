@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from api.vehiculos.services import (
     list_my_vehiculos,
     create_my_vehiculo,
+    check_placa_exists,
     update_my_vehiculo,
     delete_my_vehiculo,
     list_tipos_vehiculo,
@@ -20,6 +21,15 @@ vehiculos_bp = Blueprint("vehiculos_bp", __name__)
 def get_me_vehiculos(id_usuario):
     vehs = list_my_vehiculos(id_usuario)
     return jsonify(vehs), 200
+
+@vehiculos_bp.route("/verificar-placa", methods=["POST"])
+def verificar_placa():
+    data = request.get_json()
+    if not data or "placa" not in data:
+        return jsonify({"msg": "Placa es requerida"}), 400
+
+    existe = check_placa_exists(data["placa"])
+    return jsonify({"existe": existe}), 200
 
 @vehiculos_bp.route("/me", methods=["POST"])
 def post_me_vehiculo():

@@ -14,6 +14,13 @@ def list_my_vehiculos(user_id):
     cursor.execute(sql, (user_id,))
     return cursor.fetchall()
 
+def check_placa_exists(placa: str):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) as cantidad FROM Vehiculos WHERE placa = %s", (placa,))
+    result = cursor.fetchone()
+    return result["cantidad"] > 0
+
 
 def create_my_vehiculo(data: dict):
     conn = get_db()
