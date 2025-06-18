@@ -1,4 +1,5 @@
 from db import get_db
+from api.notificaciones.services import crear_notificacion
 from datetime import datetime
 
 def list_my_asignaciones(user_id, tipo):
@@ -43,11 +44,9 @@ def list_my_asignaciones(user_id, tipo):
     return cursor.fetchall()
 
 def create_asignacion(data: dict):
-    """
-    Crea asignación con estado 'pendiente' e inserta registro.
-    """
     conn = get_db()
     cursor = conn.cursor()
+
     id_solicitud = data["id_solicitud"]
     id_transportista = data["id_transportista"]
     precio = data["precio"]
@@ -57,8 +56,19 @@ def create_asignacion(data: dict):
         VALUES (%s, %s, %s, 'pendiente', %s)
     """
     cursor.execute(sql, (id_solicitud, id_transportista, None, precio))
-    new_id = cursor.lastrowid
-    return get_asignacion_by_id(new_id)
+    id_asignacion = cursor.lastrowid
+
+    # Notificar al transportista
+    crear_notificacion(
+        id_usuario=id_transportista,
+        tipo_evento='asignacion_creada',
+        tabla='Asignaciones',
+        id_referencia=id_asignacion,
+        mensaje='Tienes una nueva solicitud de mudanza disponible.'
+    )
+
+    conn.commit()
+    return get_asignacion_by_id(id_asignacion)
 
 def get_asignacion_by_id(id_asignacion: int):
     conn = get_db()
@@ -70,37 +80,77 @@ def get_asignacion_by_id(id_asignacion: int):
 def change_estado_asignacion(id_asignacion: int, nuevo_estado: str):
     conn = get_db()
     cursor = conn.cursor()
-    # Para confirmar, agregamos fecha_confirmacion
-    cursor.execute("""
-            UPDATE Asignaciones 
-            SET estado = %s, fecha_confirmacion = NOW() 
-            WHERE id_asignacion = %s
-        """, (nuevo_estado, id_asignacion))
 
-    # Insertar una notificación para el transportista
+    # 1. Actualizar estado y fecha
     cursor.execute("""
-            SELECT id_transportista FROM Asignaciones WHERE id_asignacion = %s
-        """, (id_asignacion,))
-    id_transportista = cursor.fetchone()['id_transportista']
+        UPDATE Asignaciones 
+        SET estado = %s, fecha_confirmacion = NOW() 
+        WHERE id_asignacion = %s
+    """, (nuevo_estado, id_asignacion))
 
-    mensaje = f"Has {'aceptado' if nuevo_estado == 'confirmado' else 'rechazado'} una solicitud"
+    # 2. Obtener cliente (a través de la solicitud)
     cursor.execute("""
-            INSERT INTO Notificaciones (id_usuario, tipo, mensaje)
-            VALUES (%s, 'asignacion', %s)
-        """, (id_transportista, mensaje))
-    print(mensaje)
+        SELECT s.id_cliente, a.id_transportista
+        FROM Asignaciones a
+        JOIN Solicitudes s ON a.id_solicitud = s.id_solicitud
+        WHERE a.id_asignacion = %s
+    """, (id_asignacion,))
+    resultado = cursor.fetchone()
+
+    if not resultado:
+        return {"error": "Asignación no encontrada"}, 404
+
+    id_cliente = resultado['id_cliente']
+
+    # 3. Crear notificación para el cliente
+    mensaje = f"Tu solicitud ha sido {'aceptada' if nuevo_estado == 'confirmado' else 'rechazada'} por el transportista."
+    crear_notificacion(
+        id_usuario=id_cliente,
+        tipo_evento=f"asignacion_{nuevo_estado}",
+        tabla='Asignaciones',
+        id_referencia=id_asignacion,
+        mensaje=mensaje
+    )
+
+    conn.commit()
     return {"mensaje": mensaje}
 
 def delete_asignacion(id_asignacion: int) -> bool:
     """
-    Elimina la asignación con el id dado.
+    Elimina la asignación con el id dado y notifica al transportista.
     Devuelve True si se eliminó alguna fila, False si no existía.
     """
     conn = get_db()
     cursor = conn.cursor()
+
+    # 1. Obtener id del transportista y solicitud antes de eliminar
+    cursor.execute("""
+        SELECT id_transportista, id_solicitud 
+        FROM Asignaciones 
+        WHERE id_asignacion = %s
+    """, (id_asignacion,))
+    asignacion = cursor.fetchone()
+
+    if not asignacion:
+        return False
+
+    id_transportista = asignacion["id_transportista"]
+
+    # 2. Eliminar la asignación
     cursor.execute(
         "DELETE FROM Asignaciones WHERE id_asignacion = %s",
         (id_asignacion,)
     )
     conn.commit()
-    return cursor.rowcount > 0
+
+    # 3. Crear notificación para el transportista
+    mensaje = "El cliente ha cancelado una asignación que te había sido asignada."
+    crear_notificacion(
+        id_usuario=id_transportista,
+        tipo_evento="asignacion_eliminada",
+        tabla="Asignaciones",
+        id_referencia=id_asignacion,
+        mensaje=mensaje
+    )
+
+    return True

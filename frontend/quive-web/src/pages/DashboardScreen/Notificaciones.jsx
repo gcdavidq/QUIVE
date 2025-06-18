@@ -1,36 +1,83 @@
 import React, { useEffect, useState } from 'react';
-import { Bell, X, MapPin } from 'lucide-react';
+import { Bell, X, CalendarClock, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import dayjs from 'dayjs';
+import isToday from 'dayjs/plugin/isToday';
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+
+dayjs.extend(isToday);
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
 
 const Notificaciones = ({ userData }) => {
   const navigate = useNavigate();
-  const [asignaciones, setAsignaciones] = useState([]);
-  console.log('userData en Notificaciones:', userData);
+  const [notificaciones, setNotificaciones] = useState([]);
+
   useEffect(() => {
-    if (!userData?.id_usuario || !userData?.tipo_usuario) return;
-    axios.get(`http://localhost:5000/asignaciones/${userData.id_usuario}/${userData.tipo_usuario}`)
-      .then(res => setAsignaciones(res.data));
+    if (!userData?.id_usuario) return;
+    axios
+      .get(`http://localhost:5000/notificaciones/${userData.id_usuario}`)
+      .then((res) => setNotificaciones(res.data))
+      .catch((err) => console.error("Error al obtener notificaciones:", err));
   }, [userData]);
 
-  const responder = (id_asignacion, estado) => {
-    axios.post(`http://localhost:5000/asignaciones/${id_asignacion}/respuesta`, { estado })
+  const marcarComoLeida = (id_notificacion) => {
+    axios
+      .patch(`http://localhost:5000/notificaciones/${id_notificacion}/leido`)
       .then(() => {
-        setAsignaciones(prev =>
-          prev.map(a => a.id_asignacion === id_asignacion ? { ...a, estado } : a)
+        setNotificaciones((prev) =>
+          prev.map((n) =>
+            n.id_notificacion === id_notificacion
+              ? { ...n, leido: true }
+              : n
+          )
         );
       });
   };
 
-  const colorEstado = (estado) => {
-    if (estado === 'confirmado') return 'bg-green-100 text-green-700';
-    if (estado === 'rechazado') return 'bg-red-100 text-red-700';
-    return 'bg-yellow-100 text-yellow-700';
+  const agruparNotificaciones = (notis) => {
+    const hoy = [];
+    const ayer = [];
+    const semana = [];
+    const mes = [];
+    const antiguos = [];
+
+    const ahora = dayjs();
+    const fechaAyer = ahora.subtract(1, 'day');
+    const startOfWeek = ahora.startOf('week');
+    const startOfMonth = ahora.startOf('month');
+
+    notis.forEach((n) => {
+      const fecha = dayjs(n.fecha);
+      if (fecha.isToday()) {
+        hoy.push(n);
+      } else if (fecha.isSame(fechaAyer, 'day')) {
+        ayer.push(n);
+      } else if (fecha.isSameOrAfter(startOfWeek)) {
+        semana.push(n);
+      } else if (fecha.isSameOrAfter(startOfMonth)) {
+        mes.push(n);
+      } else {
+        antiguos.push(n);
+      }
+    });
+
+    return [
+      { titulo: 'Hoy', data: hoy },
+      { titulo: 'Ayer', data: ayer },
+      { titulo: 'Esta semana', data: semana },
+      { titulo: 'Este mes', data: mes },
+      { titulo: 'Más antiguas', data: antiguos },
+    ].filter((grupo) => grupo.data.length > 0);
   };
+
+  const grupos = agruparNotificaciones(notificaciones);
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
-      <div className="bg-white rounded-2xl shadow-xl w-[60%]  p-6 max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-2xl shadow-xl w-[90%] md:w-[60%] p-6 max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-blue-600 flex items-center space-x-2">
@@ -47,70 +94,50 @@ const Notificaciones = ({ userData }) => {
           </button>
         </div>
 
-        {/* Contenido scrolleable */}
-        <div className="overflow-y-auto space-y-4 pr-1" style={{ maxHeight: 'calc(90vh - 80px)' }}>
-          {asignaciones.length === 0 && (
-            <p className="text-gray-500 text-sm text-center py-4">No tienes notificaciones por el momento.</p>
+        {/* Contenido */}
+        <div className="overflow-y-auto pr-1 space-y-6" style={{ maxHeight: 'calc(90vh - 80px)' }}>
+          {grupos.length === 0 ? (
+            <p className="text-gray-500 text-sm text-center py-4">No tienes notificaciones.</p>
+          ) : (
+            grupos.map((grupo, idx) => (
+              <div key={idx}>
+                <h3 className="text-sm font-semibold text-gray-600 mb-2">{grupo.titulo}</h3>
+                <div className="space-y-3">
+                  {grupo.data.map((noti) => (
+                    <div
+                      key={noti.id_notificacion}
+                      className={`p-4 rounded-lg shadow border transition ${
+                        noti.leido
+                          ? 'bg-gray-50 border-gray-200'
+                          : 'bg-white border-blue-500'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center space-x-3">
+                          <Info className="w-5 h-5 text-blue-600" />
+                          <div>
+                            <p className="text-sm text-gray-800">{noti.mensaje}</p>
+                            <p className="text-xs text-gray-500 flex items-center mt-1">
+                              <CalendarClock className="w-3 h-3 mr-1" />
+                              {dayjs(noti.fecha).format('DD/MM/YYYY HH:mm')}
+                            </p>
+                          </div>
+                        </div>
+                        {!noti.leido && (
+                          <button
+                            onClick={() => marcarComoLeida(noti.id_notificacion)}
+                            className="text-xs text-blue-600 hover:underline"
+                          >
+                            Marcar como leída
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
           )}
-
-          {asignaciones.map(asignacion => (
-            <div key={asignacion.id_asignacion} className="bg-white p-4 rounded-lg shadow border border-gray-200 space-y-3">
-              {/* Información del otro usuario */}
-              <div className="flex items-center space-x-3">
-                <img
-                    src={asignacion.usuario_foto}
-                    alt="Foto del usuario"
-                    className="w-10 h-10 rounded-full object-cover border border-gray-300"
-                    />
-                <div>
-                  <p className="text-sm font-medium text-gray-800">{asignacion.usuario_nombre}</p>
-                  <p className="text-xs text-gray-500">{asignacion.usuario_telefono}</p>
-                </div>
-              </div>
-
-              {/* Ruta */}
-              <div className="text-sm text-gray-700 space-y-1">
-                <div className="flex items-center">
-                  <MapPin className="w-4 h-4 mr-2 text-blue-500" />
-                  <span><strong>Desde:</strong> {asignacion.origen}</span>
-                </div>
-                <div className="flex items-center">
-                  <MapPin className="w-4 h-4 mr-2 text-green-500" />
-                  <span><strong>Hasta:</strong> {asignacion.destino}</span>
-                </div>
-              </div>
-
-              {/* Detalles */}
-              <div className="text-sm text-gray-600 space-y-1">
-                <p><strong>Fecha:</strong> {new Date(asignacion.fecha_hora).toLocaleDateString()}</p>
-                <p><strong>Precio:</strong> S/ {asignacion.precio}</p>
-              </div>
-
-              {/* Estado o botones */}
-              {asignacion.estado === 'pendiente' ? (
-                <div className="flex justify-end space-x-2 pt-2">
-                  <button
-                    onClick={() => responder(asignacion.id_asignacion, 'confirmado')}
-                    className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm"
-                    type="button"
-                  >
-                    Aceptar
-                  </button>
-                  <button
-                    onClick={() => responder(asignacion.id_asignacion, 'rechazado')}
-                    className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm"
-                    type="button"
-                  >
-                    Rechazar
-                  </button>
-                </div>
-              ) : (
-                <div className={`mt-2 px-2 py-1 rounded text-xs inline-block font-semibold ${colorEstado(asignacion.estado)}`}>
-                  {asignacion.estado.toUpperCase()}
-                </div>
-              )}
-            </div>
-          ))}
         </div>
       </div>
     </div>
@@ -118,3 +145,4 @@ const Notificaciones = ({ userData }) => {
 };
 
 export default Notificaciones;
+

@@ -115,7 +115,6 @@ const SeleccionConductor = ({ nextStep, seleccionarConductor, formData }) => {
 
           <button
             onClick={() => {
-              console.log("Conductor seleccionado:", conductorRecomendado);
               seleccionarConductor(conductorRecomendado);
               nextStep();
             }}

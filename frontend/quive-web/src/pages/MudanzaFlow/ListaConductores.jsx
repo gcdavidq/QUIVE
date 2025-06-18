@@ -112,7 +112,6 @@ const ListaConductores = ({ nextStep, seleccionarConductor, formData }) => {
                 <button
                   onClick={() => {
                     if (c.status === 'DISPONIBLE') {
-                      console.log('Seleccionando conductor:', c);
                       seleccionarConductor(c);
                     } else {
                       alert('Este conductor no está disponible en este momento');

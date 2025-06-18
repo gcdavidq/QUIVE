@@ -4,7 +4,6 @@ import WaitingScreen from './WaitingScreen';
 
 const PrincipalSelector = ({ formData, seleccionarConductor, nextStep, actualizarFormData, prevStep, userData }) => {
   const asignacionEnviada = useRef(false);
-
   const eliminarAsignacion = async (id_asignacion) => {
     console.log("Eliminando asignación:", id_asignacion);
     try {
@@ -35,7 +34,7 @@ const PrincipalSelector = ({ formData, seleccionarConductor, nextStep, actualiza
   };
 
   const crearAsignacion = async () => {
-    if (!formData.conductor || formData.asignacion || asignacionEnviada.current) return;
+    if (!formData.conductor || formData.asignacion?.id_asignacion || asignacionEnviada.current) return;
 
     asignacionEnviada.current = true;
 
@@ -82,8 +81,7 @@ const PrincipalSelector = ({ formData, seleccionarConductor, nextStep, actualiza
     prevStep();
   };
 
-
-  if (formData.conductor && !formData.asignacion) {
+if (formData.conductor && !formData.asignacion?.id_asignacion) {
       crearAsignacion();
     };
 

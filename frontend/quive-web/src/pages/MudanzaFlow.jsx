@@ -143,7 +143,6 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
         )}
         {currentStep === 3 && (
           <SeleccionConductor
-            setCurrentStep={setCurrentStep}
             seleccionarConductor={seleccionarConductor}
             nextStep={nextStep}
             formData={formData}
