@@ -1,5 +1,5 @@
-// Archivo principal: MudanzaFlow.jsx
-import React, { useState } from 'react';
+// Archivo: MudanzaFlow.jsx
+import React, { useState, useEffect } from 'react';
 import StepIndicator from './MudanzaFlow/StepIndicator';
 import DetallesMudanza from './MudanzaFlow/DetallesMudanza';
 import CaracteristicasObjetos from './MudanzaFlow/CaracteristicasObjetos';
@@ -9,20 +9,7 @@ import MetodosPago from './MudanzaFlow/MetodosPago';
 import { ArrowLeft } from 'lucide-react';
 
 const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
-  const [currentStep, setCurrentStep] = useState(() => {
-    const form = userData?.formularioMudanza;
-
-    if (form?.asignacion?.estado === 'confirmada') {
-      return 5;
-    } else if (form?.conductor) {
-      return 4;
-    } else if (form?.asignacion?.estado === 'cancelada' || form?.asignacion?.estado === 'rechazada') {
-      return 3;
-    }else {
-      return 1;
-    }
-  });
-  const initialFormData = {
+  const [formData, setFormData] = useState({
     id_solicitud: '',
     origen: '',
     destino: '',
@@ -35,9 +22,85 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
     conductor: null,
     notas: '',
     asignacion: {},
-    ...(userData?.formularioMudanza || {})  // ← Sobrescribe con datos existentes si hay
-  };
-  const [formData, setFormData] = useState(initialFormData);
+    ...(userData?.formularioMudanza || {})
+  });
+
+  const [currentStep, setCurrentStep] = useState(null);
+  const [nuevoObjeto, setNuevoObjeto] = useState({});
+
+  // Ejecutar la carga solo si no hay datos
+  useEffect(() => {
+    const cargarDatos = async () => {
+      try {
+        const response = await fetch(`http://127.0.0.1:5000/solicitudes/mi_solicitud/${userData?.id_usuario}`);
+        const data = await response.json();
+
+        const nuevaData = {
+          id_solicitud: data.id_solicitud,
+          origen: data.origen || '',
+          destino: data.destino || '',
+          fecha: data.fecha ? data.fecha.split('T')[0] : '',
+          hora: data.hora || '',
+          ruta: data.ruta || '',
+          distancia: data.distancia || '',
+          tiempos_estimado: data.tiempo_total_estimado_horas || '',
+          objetos: data.objetos || [],
+          conductor: data.id_transportista
+            ? {
+                capacidad: data.capacidad,
+                distancia: `${(data.distancia / 1000).toFixed(2)} km`,
+                foto: data.foto,
+                id_transportista: data.id_transportista,
+                nombre: data.nombre,
+                precio: data.precio,
+                puntaje: data.puntaje,
+                rating: data.puntaje,
+                reviews: data.reviews,
+                tiempo: `${Math.round(data.tiempo_total_estimado_horas * 60)} min`,
+                vehiculo: data.vehiculo,
+                viajes: data.viajes
+              }
+            : null,
+          notas: '',
+          asignacion: data.id_asignacion
+            ? {
+                id_asignacion: data.id_asignacion,
+                estado: data.estado_asignacion
+              }
+            : {},
+        };
+
+        setUserData((prev) => ({
+          ...prev,
+          formularioMudanza: nuevaData,
+        }));
+      } catch (error) {
+        console.error("Error cargando solicitud:", error);
+      }
+    };
+
+    if (userData?.id_usuario && !userData?.formularioMudanza?.id_solicitud) {
+      cargarDatos();
+    }
+  }, [userData?.id_usuario, userData?.formularioMudanza?.id_solicitud,setUserData]);
+
+  // Actualizar currentStep una vez que se tenga formularioMudanza
+  useEffect(() => {
+    const form = userData?.formularioMudanza;
+    if (!form) return;
+
+    setFormData((prev) => ({ ...prev, ...form }));
+
+    if (form?.asignacion?.estado === 'confirmada') {
+      setCurrentStep(5);
+    } else if (form?.conductor) {
+      setCurrentStep(4);
+    } else if (form?.asignacion?.estado === 'cancelada' || form?.asignacion?.estado === 'rechazada') {
+      setCurrentStep(3);
+    } else {
+      setCurrentStep(1);
+    }
+  }, [userData?.formularioMudanza]);
 
   const actualizarFormData = (cambios) => {
     const nuevo = { ...formData, ...cambios };
@@ -48,52 +111,42 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
     }));
   };
 
-  const [nuevoObjeto, setNuevoObjeto] = useState({});
-
   const nextStep = () => {
     if (formData.conductor && !formData.asignacion?.id_asignacion) {
-      // Si ya hay conductor, forzar quedarse en paso 4
       setCurrentStep(4);
       return;
     }
-
     if (currentStep < 5) {
-      // Si no hay conductor, avanzar normalmente
       setCurrentStep(currentStep + 1);
-      return;
     }
-
-    // En cualquier otro caso, no hacer nada (por ejemplo: paso 5 con conductor)
   };
 
-
   const prevStep = () => currentStep > 1 && setCurrentStep(currentStep - 1);
+
   const volver = () => {
     if (currentStep >= 4 && formData.conductor) {
-      // Si ya se seleccionó un conductor, solo se puede volver al inicio
       setActiveTab('inicio');
-      return;
-    }
-
-    if (currentStep > 1 && !formData.conductor) {
+    } else if (currentStep > 1 && !formData.conductor) {
       prevStep();
     } else if (currentStep === 5 && formData.asignacion?.estado !== 'confirmada') {
       setCurrentStep(3);
-    }else {
+    } else {
       setActiveTab('inicio');
     }
   };
 
   const agregarObjeto = () => {
     if (!nuevoObjeto.cantidad?.toString().trim() || !nuevoObjeto.variante?.toString().trim()) {
-  return alert('Ingresa todos los campos');
-}
+      return alert('Ingresa todos los campos');
+    }
     setFormData({ ...formData, objetos: [...formData.objetos, { ...nuevoObjeto, id: Date.now() }] });
     setNuevoObjeto({});
   };
 
   const eliminarObjeto = id => setFormData({ ...formData, objetos: formData.objetos.filter(obj => obj.id !== id) });
+
   const seleccionarConductor = conductor => actualizarFormData({ conductor: conductor });
+
   const validarPaso1 = () => {
     if (!formData.origen || !formData.destino || !formData.fecha || !formData.hora) {
       alert('Complete todos los campos');
@@ -101,6 +154,14 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
     }
     return true;
   };
+
+  if (currentStep === null) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <span className="text-gray-500">Cargando solicitud...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -122,7 +183,6 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
       </div>
 
       <div className="flex-1 px-6 pb-20 overflow-auto">
-        {/* Paso actual */}
         {currentStep === 1 && (
           <DetallesMudanza
             userData={userData}
@@ -162,7 +222,6 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
             userData={userData}
           />
         )}
-
         {currentStep === 5 && (
           <MetodosPago
             formData={formData}

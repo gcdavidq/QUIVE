@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from api.solicitudes.services import (
+    get_solicitud_by_user_id,
     get_solicitud_by_id,
     create_solicitud,
     update_solicitud,
@@ -10,6 +11,15 @@ from api.solicitudes.schemas import CrearSolicitudSchema, ActualizarSolicitudSch
 from marshmallow import ValidationError
 
 solicitudes_bp = Blueprint("solicitudes_bp", __name__)
+
+@solicitudes_bp.route("/mi_solicitud/<int:usuario_id>", methods=["GET"])
+def get_mi_solicitud(usuario_id):
+    user_id = usuario_id
+    sol = get_solicitud_by_user_id(user_id)
+    if not sol:
+        return jsonify({"msg": "No tienes solicitudes pendientes"}), 404
+    return jsonify(sol), 200
+
 
 @solicitudes_bp.route("/<int:id_solicitud>", methods=["GET"])
 def get_by_id_solicitud(id_solicitud):

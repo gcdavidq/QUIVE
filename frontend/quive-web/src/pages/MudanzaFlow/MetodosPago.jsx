@@ -3,7 +3,7 @@ import { Star } from 'lucide-react';
 
 const MetodosPago = ({ formData, actualizarFormData, volver }) => {
   const [mensaje, setMensaje] = useState('');
-
+  console.log("formData en MetodosPago:", formData);
   const handleCancelar = async () => {
     try {
       const idAsignacion = formData?.asignacion?.id_asignacion;

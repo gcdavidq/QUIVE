@@ -2,9 +2,33 @@ from db import get_db
 from utils.calcular_distancia import calcular_ruta_ors
 from datetime import datetime, timedelta
 import json
+from datetime import timedelta
 
-# Nota: para el cálculo de tarifa necesitarías utilidades en utils/geo.py.
-# Aquí haremos un cálculo de tarifa ficticio (p. ej. 10 unidades por objeto).
+def get_solicitud_by_user_id(user_id: int):
+    """
+    Versión corregida para PyMySQL que convierte campos timedelta a strings.
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("CALL ObtenerSolicitudesPendientesConDetalle(%s)", (user_id,))
+    fila = cursor.fetchone()
+
+    if fila:
+        # Convertir objetos timedelta a string legible (ej: "0:39:00")
+        for key, value in fila.items():
+            if isinstance(value, timedelta):
+                fila[key] = str(value)
+
+        # Si hay campo 'objetos' en formato JSON string
+        if "objetos" in fila and isinstance(fila["objetos"], str):
+            try:
+                fila["objetos"] = json.loads(fila["objetos"])
+            except json.JSONDecodeError:
+                pass
+
+    return fila
+
 def get_solicitud_by_id(id_solicitud: int):
     conn = get_db()
     cursor = conn.cursor()
