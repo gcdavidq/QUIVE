@@ -15,7 +15,7 @@ const RegisterScreen = ({ onNavigate, setUserData }) => {
     tipoUsuario: 'cliente', placa: '', tipoVehiculo: ''
   });
   const [direccion, setUbicacion] = useState({ departamento: '', provincia: '', distrito: '', tipoVia: '', nombreVia: '', numero: '' });
-  const [fotoPerfil, setFotoPerfil] = useState('https://dl.dropboxusercontent.com/scl/fi/jq4kjwhrqyjkmnwrpw3ks/blank-profile-picture-973460_1280.png');
+  const [fotoPerfil, setFotoPerfil] = useState('https://dl.dropboxusercontent.com/scl/fi/jq4kjwhrqyjkmnwrpw3ks/blank-profile-picture-973460_1280.png?rlkey=ol5z7dhlc0nc6mvtff2r680sr&st=e69hru52');
   const [codigoVerificacion, setCodigoVerificacion] = useState('');
   const [documentos, setDocumentos] = useState({ licencia_conducir: null, tarjeta_propiedad: null, certificado_itv: null });
   const [tarifas, setTarifas] = useState({ precio_por_m3: '', precio_por_kg: '', precio_por_km: '', recargo_fragil: '', recargo_embalaje: '' });

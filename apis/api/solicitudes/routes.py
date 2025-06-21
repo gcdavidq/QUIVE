@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from api.solicitudes.services import (
     get_solicitud_by_id,
-    create_solcitud,
+    create_solicitud,
     update_solicitud,
     actualizar_solicitud_completa,
     list_solicitudes_disponibles
@@ -26,7 +26,7 @@ def post_solicitud():
         data = schema.load(payload)
     except ValidationError as err:
         return jsonify({"errors": err.messages}), 400
-    resultado = create_solcitud(data)
+    resultado = create_solicitud(data)
     return jsonify(resultado), 201
 
 @solicitudes_bp.route("/<int:id_solicitud>", methods=["PUT"])

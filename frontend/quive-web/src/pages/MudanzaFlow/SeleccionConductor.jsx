@@ -14,7 +14,7 @@ const SeleccionConductor = ({ nextStep, seleccionarConductor, formData }) => {
           foto: data.foto_perfil_url,
           puntaje: data.promedio_calificaciones,
           rating: parseFloat(data.promedio_calificaciones).toFixed(1),
-          reviews: data.viajes_realizados,
+          reviews: data.cantidad_calificaciones,
           distancia: `${(formData.distancia / 1000).toFixed(1)} km`, // metros a km
           tiempo: data.tiempo_estimado_horas * 60 > 60
           ? `${Math.floor(data.tiempo_estimado_horas)} h ${(data.tiempo_estimado_horas * 60 % 60).toFixed(0)} min`

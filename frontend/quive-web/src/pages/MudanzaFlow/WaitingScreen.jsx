@@ -28,16 +28,16 @@ const WaitingScreen = ({ onCancelar, actualizarFormData, formData, userData, nex
             clearInterval(pollingRef.current);
           }
 
-          if (estado === "rechazado") {
+          if (estado === "rechazada") {
             actualizarFormData({ conductor: null, asignacion: null });
             onCancelar();
           }
 
-          if (estado === "confirmado") {
+          if (estado === "confirmada") {
             actualizarFormData({
               asignacion: {
                 id_asignacion: miAsignacion.id_asignacion,
-                estado: "confirmado",
+                estado: "confirmada",
               },
             });
             nextStep();

@@ -2,8 +2,11 @@ import React from 'react';
 
 const Paso5Tarifas = ({ tarifas, setTarifas, setCurrentStep }) => {
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    if (/^\d*\.?\d*$/.test(value)) {
+    let { name, value } = e.target;
+    if (value.startsWith('.')) {
+      value = '0' + value;
+    }
+    if (/^\d+(\.\d{0,2})?$/.test(value) || value === '') {
       setTarifas(prev => ({ ...prev, [name]: value }));
     }
   };
@@ -22,6 +25,7 @@ const Paso5Tarifas = ({ tarifas, setTarifas, setCurrentStep }) => {
           <input
             type="text"
             name="precio_por_m3"
+            placeholder='ejemplo: 1.50'
             value={tarifas.precio_por_m3}
             onChange={handleInputChange}
             className="w-full px-4 py-3 border rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
@@ -32,6 +36,7 @@ const Paso5Tarifas = ({ tarifas, setTarifas, setCurrentStep }) => {
           <input
             type="text"
             name="precio_por_kg"
+            placeholder='ejemplo: 0.40'
             value={tarifas.precio_por_kg}
             onChange={handleInputChange}
             className="w-full px-4 py-3 border rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
@@ -42,6 +47,7 @@ const Paso5Tarifas = ({ tarifas, setTarifas, setCurrentStep }) => {
           <input
             type="text"
             name="precio_por_km"
+            placeholder='ejemplo: 2.50'
             value={tarifas.precio_por_km}
             onChange={handleInputChange}
             className="w-full px-4 py-3 border rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
@@ -52,6 +58,7 @@ const Paso5Tarifas = ({ tarifas, setTarifas, setCurrentStep }) => {
           <input
             type="text"
             name="recargo_embalaje"
+            placeholder='ejemplo: 1.20'
             value={tarifas.recargo_embalaje}
             onChange={handleInputChange}
             className="w-full px-4 py-3 border rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
@@ -62,6 +69,7 @@ const Paso5Tarifas = ({ tarifas, setTarifas, setCurrentStep }) => {
           <input
             type="text"
             name="recargo_fragil"
+            placeholder='ejemplo: 0.80'
             value={tarifas.recargo_fragil}
             onChange={handleInputChange}
             className="w-full px-4 py-3 border rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"

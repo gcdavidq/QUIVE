@@ -62,6 +62,7 @@ function obtenerSinonimos(tipoVia) {
   return sinonimosTipoVia[tipoVia] || [tipoVia];
 }
 
+
 const UbicacionPeru = ({ direccion, setUbicacion }) => {
   const datosUbicacion = useUbicacionDesdeExcel() || {};
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
@@ -73,6 +74,40 @@ const UbicacionPeru = ({ direccion, setUbicacion }) => {
     return null;
   });
   const [haBuscado, setHaBuscado] = useState(false);
+
+  const [esUbicacionValida, setEsUbicacionValida] = useState(null);
+
+  const validarUbicacion = async ([lat, lon]) => {
+    const puntoReferencia = [-12.045627, -77.052869]; // Lima
+    const body = {
+      coordinates: [
+        [puntoReferencia[1], puntoReferencia[0]],
+        [lon, lat],
+      ],
+      radiuses: [200, 200],
+    };
+
+    try {
+      const response = await fetch("https://api.openrouteservice.org/v2/directions/driving-car", {
+        method: "POST",
+        headers: {
+          Authorization: "5b3ce3597851110001cf6248586c45473a8042fbbe48c152e2539778",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      const data = await response.json();
+      const tieneRuta = data?.routes?.[0]?.geometry !== undefined;
+      return tieneRuta;
+    } catch (err) {
+      console.error("Error en validación de ruta:", err);
+      return false;
+    }
+  };
+
+
+
 
   // Construye el string de búsqueda para Nominatim
   const construirQuery = ({ incluyeNumero, tipoViaAlternativo }) => {
@@ -170,25 +205,32 @@ const UbicacionPeru = ({ direccion, setUbicacion }) => {
     });
 
     setPositionSeleccionada([parseFloat(lat), parseFloat(lon)]);
+    validarUbicacion([parseFloat(lat), parseFloat(lon)]);
+
   };
 
   // ✅ Nuevo: cuando el usuario hace clic libre en el mapa
   const onManualSelect = async ([lat, lon]) => {
+    const esValida = await validarUbicacion([lat, lon]);
+    setEsUbicacionValida(esValida);
+
+    // Mostrar mensaje pero no cambiar punto si no es válida
+    if (!esValida) {
+      return;
+    }
+
     setPositionSeleccionada([lat, lon]);
     setResultados([]);
-
+    
     try {
       const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`;
       const resp = await fetch(url, { headers: { "User-Agent": "QUIVE-App" } });
       const data = await resp.json();
-
       const address = data?.address || {};
-      const departamento = address.state || "";
-      const provincia =
-        address.county || address.region || address.state_district || "";
-      const distrito =
-        address.city_district || address.suburb || address.city || "";
 
+      const departamento = address.state || "";
+      const provincia = address.county || address.region || address.state_district || "";
+      const distrito = address.city_district || address.suburb || address.city || "";
       const viaCompleta = address.road || "";
       const numero = address.house_number || "";
 
@@ -215,6 +257,7 @@ const UbicacionPeru = ({ direccion, setUbicacion }) => {
       console.error("Error al hacer reverse geocoding:", error);
     }
   };
+
 
   const resumenUbicacion = `${direccion.tipoVia} ${direccion.nombreVia} ${direccion.numero}, ${direccion.distrito}, ${direccion.provincia}, ${direccion.departamento}, Peru`
 
@@ -266,6 +309,7 @@ const UbicacionPeru = ({ direccion, setUbicacion }) => {
               onMarkerClick={onMarkerClick}
               onManualSelect={onManualSelect}
               haBuscado={haBuscado}
+              esUbicacionValida={esUbicacionValida}
             />
             {direccion.lat && direccion.lng && (
               <div style={{ marginTop: "0.5rem", fontSize: "0.9rem", color: "#374151", textAlign: "left" }}>

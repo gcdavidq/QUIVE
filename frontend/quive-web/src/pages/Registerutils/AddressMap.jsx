@@ -1,7 +1,14 @@
 // src/components/Registerutils/AddressMap.jsx
 
-import React, { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
+import React, { useEffect, useState, useCallback } from "react";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMap,
+  useMapEvents,
+} from "react-leaflet";
 import L from "leaflet";
 
 const markerIcon = new L.Icon({
@@ -45,7 +52,6 @@ const styles = {
   },
 };
 
-// Centrar el mapa si cambia la posición seleccionada
 function CenterMap({ position }) {
   const map = useMap();
   useEffect(() => {
@@ -56,7 +62,6 @@ function CenterMap({ position }) {
   return null;
 }
 
-// Captura clics del usuario sobre el mapa
 function MapClickHandler({ onManualSelect }) {
   useMapEvents({
     click(e) {
@@ -67,12 +72,66 @@ function MapClickHandler({ onManualSelect }) {
   return null;
 }
 
+const EtiquetaUbicacion = ({ position, texto, colorFondo, colorTexto }) => {
+  const map = useMap();
+  const [pixelPos, setPixelPos] = useState(null);
+
+  // Función que recalcula la posición del punto
+  const updatePosition = useCallback(() => {
+    if (position && map) {
+      const point = map.latLngToContainerPoint(position);
+      setPixelPos(point);
+    }
+  }, [position, map]);
+
+
+  useEffect(() => {
+    updatePosition();
+  }, [updatePosition]);
+
+  useEffect(() => {
+    map.on("move", updatePosition);
+    map.on("zoom", updatePosition);
+    return () => {
+      map.off("move", updatePosition);
+      map.off("zoom", updatePosition);
+    };
+  }, [map, updatePosition]);
+
+
+  if (!pixelPos) return null;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: `${pixelPos.x}px`,
+        top: `${pixelPos.y - 35}px`,
+        transform: "translate(-50%, -100%)",
+        backgroundColor: colorFondo,
+        color: colorTexto,
+        border: `1px solid ${colorTexto}`,
+        borderRadius: "6px",
+        padding: "4px 10px",
+        fontSize: "0.75rem",
+        whiteSpace: "nowrap",
+        zIndex: 999,
+        pointerEvents: "none",
+        fontWeight: "500",
+      }}
+    >
+      {texto}
+    </div>
+  );
+};
+
 const AddressMap = ({
   resultados,
   positionSeleccionada,
   onMarkerClick,
   haBuscado,
-  onManualSelect, // nuevo prop
+  onManualSelect,
+  esUbicacionValida,
 }) => {
   return (
     <div style={styles.mapaContainer}>
@@ -125,13 +184,23 @@ const AddressMap = ({
           );
         })}
 
-        {/* Mostrar marcador manual si no hay resultados */}
         {!resultados.length && positionSeleccionada && (
           <Marker position={positionSeleccionada} icon={markerIcon}>
             <Popup>
               <strong>Ubicación seleccionada manualmente</strong>
             </Popup>
           </Marker>
+        )}
+
+        {/* Siempre mostrar etiqueta sobre el punto */}
+        {positionSeleccionada && (
+          <EtiquetaUbicacion
+            position={L.latLng(positionSeleccionada)}
+            texto= {"✔ Ubicación válida para ruta"
+            }
+            colorFondo={"#fee2e2|"}
+            colorTexto={"#991b1b"}
+          />
         )}
       </MapContainer>
 

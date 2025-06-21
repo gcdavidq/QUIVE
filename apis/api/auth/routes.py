@@ -54,7 +54,7 @@ def register():
         elif request.form.get("foto_perfil_url"):
             payload["foto_perfil_url"] = request.form.get("foto_perfil_url")
         else:
-            payload["foto_perfil_url"] = 'https://dl.dropboxusercontent.com/scl/fi/jq4kjwhrqyjkmnwrpw3ks/blank-profile-picture-973460_1280.png'
+            payload["foto_perfil_url"] = 'https://dl.dropboxusercontent.com/scl/fi/jq4kjwhrqyjkmnwrpw3ks/blank-profile-picture-973460_1280.png?rlkey=ol5z7dhlc0nc6mvtff2r680sr&st=e69hru52'
         print(payload)
         data = schema.load(payload)
         print(data)

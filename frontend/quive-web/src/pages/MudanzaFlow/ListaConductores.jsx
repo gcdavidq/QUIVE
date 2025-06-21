@@ -21,7 +21,7 @@ const ListaConductores = ({ nextStep, seleccionarConductor, formData }) => {
           color: 'green',
           precio: parseFloat(c.precio_estimado_total).toFixed(2),
           rating: parseFloat(c.promedio_calificaciones).toFixed(1),
-          reviews: c.viajes_realizados,
+          reviews: c.cantidad_calificaciones,
           distancia: `${(formData.distancia / 1000).toFixed(1)} km`,
           tiempo:
             c.tiempo_estimado_horas * 60 > 60

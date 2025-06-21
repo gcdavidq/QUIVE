@@ -1,12 +1,45 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Star } from 'lucide-react';
 
-const MetodosPago = () => {
+const MetodosPago = ({ formData, actualizarFormData, volver }) => {
+  const [mensaje, setMensaje] = useState('');
+
+  const handleCancelar = async () => {
+    try {
+      const idAsignacion = formData?.asignacion?.id_asignacion;
+      if (!idAsignacion) {
+        alert("No se encontró la asignación.");
+        return;
+      }
+
+      const response = await fetch(`http://127.0.0.1:5000/asignaciones/${idAsignacion}/respuesta`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ estado: "cancelada" }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        alert(error?.error || "Error al cancelar");
+        return;
+      }
+
+      setMensaje("Asignación cancelada correctamente.");
+      actualizarFormData({
+        conductor: null,
+        asignacion: null,
+      });
+      volver();
+    } catch (err) {
+      console.error("Error al cancelar la asignación:", err);
+      alert("Error inesperado.");
+    }
+  };
+
   return (
     <div className="p-6">
-
-      {/* StepIndicator debe ir arriba si se importa desde el componente principal */}
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* RESUMEN */}
         <div className="space-y-6">
@@ -42,13 +75,22 @@ const MetodosPago = () => {
             </div>
 
             <div className="flex space-x-4 mt-6">
-              <button className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+              <button
+                onClick={handleCancelar}
+                className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+              >
                 Cancelar
               </button>
               <button className="flex-1 bg-blue-500 text-white py-3 rounded-lg font-medium hover:bg-blue-600 transition-colors">
                 Confirmar Servicio
               </button>
             </div>
+
+            {mensaje && (
+              <div className="mt-4 text-green-600 text-sm font-medium text-center">
+                {mensaje}
+              </div>
+            )}
           </div>
         </div>
 

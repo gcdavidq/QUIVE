@@ -12,11 +12,13 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
   const [currentStep, setCurrentStep] = useState(() => {
     const form = userData?.formularioMudanza;
 
-    if (form?.asignacion?.estado === 'confirmado') {
+    if (form?.asignacion?.estado === 'confirmada') {
       return 5;
     } else if (form?.conductor) {
       return 4;
-    } else {
+    } else if (form?.asignacion?.estado === 'cancelada' || form?.asignacion?.estado === 'rechazada') {
+      return 3;
+    }else {
       return 1;
     }
   });
@@ -73,9 +75,11 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
       return;
     }
 
-    if (currentStep > 1) {
+    if (currentStep > 1 && !formData.conductor) {
       prevStep();
-    } else {
+    } else if (currentStep === 5 && formData.asignacion?.estado !== 'confirmada') {
+      setCurrentStep(3);
+    }else {
       setActiveTab('inicio');
     }
   };
@@ -162,7 +166,8 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
         {currentStep === 5 && (
           <MetodosPago
             formData={formData}
-            setFormData={setFormData}
+            actualizarFormData={actualizarFormData}
+            volver={volver}
           />
         )}
       </div>

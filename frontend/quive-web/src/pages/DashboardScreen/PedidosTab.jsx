@@ -26,9 +26,9 @@ const PedidosTab = ({ userData, setActiveTab }) => {
   const getEstadoColor = (estado) => {
     switch (estado) {
       case 'pendiente': return 'bg-yellow-100 text-yellow-800';
-      case 'confirmado': return 'bg-green-100 text-green-800';
-      case 'rechazado': return 'bg-red-100 text-red-800';
-      case 'cancelado': return 'bg-gray-200 text-gray-800';
+      case 'confirmada': return 'bg-green-100 text-green-800';
+      case 'rechazada': return 'bg-red-100 text-red-800';
+      case 'cancelada': return 'bg-gray-200 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -36,9 +36,9 @@ const PedidosTab = ({ userData, setActiveTab }) => {
   const getEstadoTexto = (estado) => {
     switch (estado) {
       case 'pendiente': return 'Pendiente';
-      case 'confirmado': return 'Confirmado';
-      case 'rechazado': return 'Rechazado';
-      case 'cancelado': return 'Cancelado';
+      case 'confirmada': return 'Confirmada';
+      case 'rechazada': return 'Rechazada';
+      case 'cancelada': return 'Cancelada';
       default: return estado;
     }
   };
@@ -96,9 +96,9 @@ const PedidosTab = ({ userData, setActiveTab }) => {
           >
             <option value="todos">Todos</option>
             <option value="pendiente">Pendiente</option>
-            <option value="confirmado">Confirmado</option>
-            <option value="rechazado">Rechazado</option>
-            <option value="cancelado">Cancelado</option>
+            <option value="confirmada">Confirmado</option>
+            <option value="rechazada">Rechazado</option>
+            <option value="cancelada">Cancelado</option>
           </select>
         </div>
 
@@ -142,29 +142,28 @@ const PedidosTab = ({ userData, setActiveTab }) => {
             </div>
 
             {/* Info adicional del cliente */}
-            {userData.tipo_usuario === 'transportista' && (
-              <div className="flex items-center space-x-4 mb-4">
-                <img src={pedido.usuario_foto} alt="Foto usuario" className="w-10 h-10 rounded-full object-cover" />
-                <div>
-                  <p className="text-sm font-medium text-gray-700">{pedido.usuario_nombre}</p>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Phone size={14} className="mr-1" /> {pedido.usuario_telefono}
-                  </div>
+            <div className="flex items-center space-x-4 mb-4">
+              <img src={pedido.usuario_foto} alt="Foto usuario" className="w-10 h-10 rounded-full object-cover" />
+              <div>
+                <p className="text-sm font-medium text-gray-700">{pedido.usuario_nombre}</p>
+                <div className="flex items-center text-sm text-gray-500">
+                  <Phone size={14} className="mr-1" /> {pedido.usuario_telefono}
                 </div>
               </div>
-            )}
+            </div>
+
 
             <div className="flex justify-end space-x-2">
               {pedido.estado === 'pendiente' && userData.tipo_usuario === 'transportista' && (
                 <>
                   <button
-                    onClick={() => responder(pedido.id_asignacion, 'confirmado')}
+                    onClick={() => responder(pedido.id_asignacion, 'confirmada')}
                     className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm"
                   >
                     Aceptar
                   </button>
                   <button
-                    onClick={() => responder(pedido.id_asignacion, 'rechazado')}
+                    onClick={() => responder(pedido.id_asignacion, 'rechazada')}
                     className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm"
                   >
                     Rechazar

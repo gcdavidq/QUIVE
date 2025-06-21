@@ -1,6 +1,6 @@
 from db import get_db
 from api.notificaciones.services import crear_notificacion
-from datetime import datetime
+from datetime import datetime, timedelta
 
 def list_my_asignaciones(user_id, tipo):
     """
@@ -81,16 +81,9 @@ def change_estado_asignacion(id_asignacion: int, nuevo_estado: str):
     conn = get_db()
     cursor = conn.cursor()
 
-    # 1. Actualizar estado y fecha
+    # 1. Obtener solicitud relacionada y su hora programada
     cursor.execute("""
-        UPDATE Asignaciones 
-        SET estado = %s, fecha_confirmacion = NOW() 
-        WHERE id_asignacion = %s
-    """, (nuevo_estado, id_asignacion))
-
-    # 2. Obtener cliente (a través de la solicitud)
-    cursor.execute("""
-        SELECT s.id_cliente, a.id_transportista
+        SELECT s.id_cliente, a.id_transportista, s.fecha_hora
         FROM Asignaciones a
         JOIN Solicitudes s ON a.id_solicitud = s.id_solicitud
         WHERE a.id_asignacion = %s
@@ -101,19 +94,49 @@ def change_estado_asignacion(id_asignacion: int, nuevo_estado: str):
         return {"error": "Asignación no encontrada"}, 404
 
     id_cliente = resultado['id_cliente']
+    id_transportista = resultado['id_transportista']
+    fecha_solicitada = resultado['fecha_hora']
 
-    # 3. Crear notificación para el cliente
-    mensaje = f"Tu solicitud ha sido {'aceptada' if nuevo_estado == 'confirmado' else 'rechazada'} por el transportista."
-    crear_notificacion(
-        id_usuario=id_cliente,
-        tipo_evento=f"asignacion_{nuevo_estado}",
-        tabla='Asignaciones',
-        id_referencia=id_asignacion,
-        mensaje=mensaje
-    )
+    # 2. Si se quiere cancelar, verificar que falten al menos 2 horas
+    if nuevo_estado == 'cancelada':
+        ahora = datetime.now()
+        fecha_limite = fecha_solicitada - timedelta(hours=2)
+
+        if ahora > fecha_limite:
+            return {
+                "error": "No se puede cancelar la solicitud con menos de 2 horas de anticipación."
+            }, 400
+
+    # 3. Actualizar estado
+    cursor.execute("""
+        UPDATE Asignaciones 
+        SET estado = %s, fecha_confirmacion = NOW() 
+        WHERE id_asignacion = %s
+    """, (nuevo_estado, id_asignacion))
+
+    # 4. Notificaciones
+    if nuevo_estado in ['confirmada', 'rechazada']:
+        mensaje = f"Tu solicitud ha sido {'aceptada' if nuevo_estado == 'confirmada' else 'rechazada'} por el transportista."
+        crear_notificacion(
+            id_usuario=id_cliente,
+            tipo_evento=f"asignacion_{nuevo_estado}",
+            tabla='Asignaciones',
+            id_referencia=id_asignacion,
+            mensaje=mensaje
+        )
+
+    elif nuevo_estado == 'cancelada':
+        mensaje = "El cliente ha cancelado la asignación."
+        crear_notificacion(
+            id_usuario=id_transportista,
+            tipo_evento="asignacion_cancelada_cliente",
+            tabla='Asignaciones',
+            id_referencia=id_asignacion,
+            mensaje=mensaje
+        )
 
     conn.commit()
-    return {"mensaje": mensaje}
+    return {"mensaje": f"Estado actualizado a {nuevo_estado}"}
 
 def delete_asignacion(id_asignacion: int) -> bool:
     """
