@@ -1,5 +1,5 @@
 // Archivo: MudanzaFlow.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef  } from 'react';
 import StepIndicator from './MudanzaFlow/StepIndicator';
 import DetallesMudanza from './MudanzaFlow/DetallesMudanza';
 import CaracteristicasObjetos from './MudanzaFlow/CaracteristicasObjetos';
@@ -27,10 +27,19 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
 
   const [currentStep, setCurrentStep] = useState(null);
   const [nuevoObjeto, setNuevoObjeto] = useState({});
+  const [cargando, setCargando] = useState(true);
+  const yaCargado = useRef(false);
 
-  // Ejecutar la carga solo si no hay datos
   useEffect(() => {
-    const cargarDatos = async () => {
+    const inicializar = async () => {
+      if (!userData?.id_usuario || yaCargado.current || userData?.formularioMudanza?.id_solicitud) {
+        // Si ya está cargado o no es necesario cargar, inicializa formData y currentStep
+        setFormData(prev => ({ ...prev, ...(userData?.formularioMudanza || {}) }));
+        calcularStep(userData?.formularioMudanza);
+        setCargando(false);
+        return;
+      }
+
       try {
         const response = await fetch(`http://127.0.0.1:5000/solicitudes/mi_solicitud/${userData?.id_usuario}`);
         const data = await response.json();
@@ -70,27 +79,26 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
             : {},
         };
 
-        setUserData((prev) => ({
+        setUserData(prev => ({
           ...prev,
           formularioMudanza: nuevaData,
         }));
+
+        setFormData(prev => ({ ...prev, ...nuevaData }));
+        calcularStep(nuevaData);
+        yaCargado.current = true;
       } catch (error) {
         console.error("Error cargando solicitud:", error);
+      } finally {
+        setCargando(false);
       }
     };
 
-    if (userData?.id_usuario && !userData?.formularioMudanza?.id_solicitud) {
-      cargarDatos();
-    }
-  }, [userData?.id_usuario, userData?.formularioMudanza?.id_solicitud,setUserData]);
+    inicializar();
+  }, [userData?.id_usuario]);
 
-  // Actualizar currentStep una vez que se tenga formularioMudanza
-  useEffect(() => {
-    const form = userData?.formularioMudanza;
-    if (!form) return;
-
-    setFormData((prev) => ({ ...prev, ...form }));
-
+  const calcularStep = (form) => {
+    if (!form) return setCurrentStep(1);
     if (form?.asignacion?.estado === 'confirmada') {
       setCurrentStep(5);
     } else if (form?.conductor) {
@@ -100,7 +108,7 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
     } else {
       setCurrentStep(1);
     }
-  }, [userData?.formularioMudanza]);
+  };
 
   const actualizarFormData = (cambios) => {
     const nuevo = { ...formData, ...cambios };
@@ -155,14 +163,48 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
     return true;
   };
 
-  if (currentStep === null) {
+  if (cargando || currentStep === null) {
     return (
       <div className="flex items-center justify-center h-screen">
         <span className="text-gray-500">Cargando solicitud...</span>
       </div>
     );
   }
+  const eliminarAsignacion = async (id_asignacion) => {
+    console.log("Eliminando asignación:", id_asignacion);
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:5000/asignaciones/${id_asignacion}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Respuesta del servidor:", result.mensaje);
+        actualizarFormData({ conductor: null, asignacion: null });
+      } else if (response.status === 404) {
+        const error = await response.json();
+        console.warn("No encontrada:", error.msg);
+      } else {
+        const error = await response.text();
+        console.error("Error al eliminar:", error);
+      }
+    } catch (err) {
+      console.error("Error de red o servidor:", err);
+    }
+  };
+
+  const handleCancelar = () => {
+    if (formData.asignacion?.id_asignacion) {
+      eliminarAsignacion(formData.asignacion.id_asignacion);
+    }
+    prevStep();
+  };
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* HEADER FIJO */}
@@ -220,6 +262,7 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
             actualizarFormData={actualizarFormData}
             prevStep={prevStep}
             userData={userData}
+            handleCancelar={handleCancelar}
           />
         )}
         {currentStep === 5 && (
@@ -227,6 +270,7 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
             formData={formData}
             actualizarFormData={actualizarFormData}
             volver={volver}
+            handleCancelar={handleCancelar}
           />
         )}
       </div>

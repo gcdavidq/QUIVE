@@ -2,12 +2,10 @@ from db import get_db
 from flask import session
 import pymysql
 
-def list_my_pagos():
+def list_my_pagos(user_id: int):
     """
     Lista todos los pagos del cliente actual.
     """
-    usuario = session.get("usuario")
-    user_id = usuario["id_usuario"]
     conn = get_db()
     cursor = conn.cursor()
     sql = """
@@ -64,28 +62,16 @@ def webhook_pago(data: dict):
     # (Implementar notificaciones con api/notificaciones/services.py)
     return {"msg": f"Estado actualizado a {nuevo_estado}"}
 
-def refund_pago(id_pago: int):
-    """
-    ADMIN: emitir reembolso
-    """
-    conn = get_db()
-    cursor = conn.cursor()
-    # Podrías integrar con pasarela para reembolso y luego:
-    cursor.execute("UPDATE Pagos SET estado_pago='fallido' WHERE id_pago=%s", (id_pago,))
-    return {"msg": "Reembolso ejecutado (estado fallido)"}
+
 
 # Métodos de pago (tabla Metodos_Pago)
-def list_my_metodos():
-    usuario = session.get("usuario")
-    user_id = usuario["id_usuario"]
+def list_my_metodos(user_id: int):
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM Metodos_Pago WHERE id_usuario=%s", (user_id,))
+    cursor.execute("SELECT * FROM Metodos_Pago_Usuario WHERE id_usuario=%s", (user_id,))
     return cursor.fetchall()
 
-def create_metodo(data: dict):
-    usuario = session.get("usuario")
-    user_id = usuario["id_usuario"]
+def create_metodo(user_id: int, data: dict):
     conn = get_db()
     cursor = conn.cursor()
     sql = """
@@ -97,9 +83,7 @@ def create_metodo(data: dict):
     cursor.execute("SELECT * FROM Metodos_Pago WHERE id_metodo=%s", (new_id,))
     return cursor.fetchone()
 
-def update_metodo(id_metodo: int, data: dict):
-    usuario = session.get("usuario")
-    user_id = usuario["id_usuario"]
+def update_metodo(user_id: int, id_metodo: int, data: dict):
     conn = get_db()
     cursor = conn.cursor()
     # Validar propiedad
@@ -122,9 +106,7 @@ def update_metodo(id_metodo: int, data: dict):
     cursor.execute("SELECT * FROM Metodos_Pago WHERE id_metodo=%s", (id_metodo,))
     return cursor.fetchone()
 
-def delete_metodo(id_metodo: int):
-    usuario = session.get("usuario")
-    user_id = usuario["id_usuario"]
+def delete_metodo(user_id: int, id_metodo: int):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT id_usuario FROM Metodos_Pago WHERE id_metodo=%s", (id_metodo,))

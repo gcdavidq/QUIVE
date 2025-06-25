@@ -25,6 +25,7 @@ def create_app():
     from api.calificaciones.routes import calificaciones_bp
     from api.incidentes.routes import incidentes_bp
     from api.notificaciones.routes import notificaciones_bp
+    from api.metodosPago.routes import metodos_pago_bp
 
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(transportistas_bp, url_prefix="/transportistas")
@@ -37,7 +38,7 @@ def create_app():
     app.register_blueprint(calificaciones_bp, url_prefix="/calificaciones")
     app.register_blueprint(incidentes_bp, url_prefix="/incidentes")
     app.register_blueprint(notificaciones_bp, url_prefix="/notificaciones")
-
+    app.register_blueprint(metodos_pago_bp, url_prefix="/metodos_pago")
     return app
 
 if __name__ == "__main__":
