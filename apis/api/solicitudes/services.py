@@ -1,8 +1,8 @@
-from db import get_db
 from utils.calcular_distancia import calcular_ruta_ors
-from datetime import datetime, timedelta
 import json
-from datetime import timedelta
+from datetime import datetime, timedelta
+from db import get_db
+from api.notificaciones.services import crear_notificacion  # Asegúrate de tener esta función disponible
 
 def get_solicitud_by_user_id(user_id: int):
     """
@@ -166,37 +166,66 @@ def actualizar_solicitud_completa(id_solicitud, data):
         "id_solicitud": id_solicitud
     }
 
-
-def update_solicitud(id_solicitud: int, data: dict):
-    """
-    Permite reprogramar o cancelar (si faltan > 2 horas).
-    """
+def change_estado_solicitud(id_solicitud: int, nuevo_estado: str):
     conn = get_db()
     cursor = conn.cursor()
-    # Obtener solicitud
-    cursor.execute("SELECT fecha_hora, estado FROM Solicitudes WHERE id_solicitud=%s", (id_solicitud,))
-    sol = cursor.fetchone()
-    if not sol:
-        return {"error": "Solicitud no encontrada"}
 
-    ahora = datetime.utcnow()
-    fecha_hora = sol["fecha_hora"]
-    diff = fecha_hora - ahora
-    if data.get("cancelar"):
-        if diff < timedelta(hours=2):
-            return {"error": "No puedes cancelar con menos de 2 horas de anticipación"}
-        cursor.execute("UPDATE Solicitudes SET estado='cancelado' WHERE id_solicitud=%s", (id_solicitud,))
-        # (Enviar notificación a transportista si había sido asignado)
-        return {"msg": "Solicitud cancelada"}
-    elif data.get("fecha_hora"):
-        if diff < timedelta(hours=2):
-            return {"error": "No puedes reprogramar con menos de 2 horas de anticipación"}
-        nueva_fecha = data["fecha_hora"]
-        cursor.execute("UPDATE Solicitudes SET fecha_hora=%s, estado='en espera' WHERE id_solicitud=%s", (nueva_fecha, id_solicitud))
-        # (Notificar transportista si había sido asignado)
-        return {"msg": "Solicitud reprogramada", "nueva_fecha_hora": nueva_fecha}
-    else:
-        return {"error": "Datos inválidos"}
+    # 1. Obtener cliente, transportista (si lo hay) y fecha de la solicitud
+    cursor.execute("""
+        SELECT s.id_cliente, a.id_transportista, s.fecha_hora
+        FROM Solicitudes s
+        LEFT JOIN Asignaciones a ON s.id_solicitud = a.id_solicitud
+        WHERE s.id_solicitud = %s
+    """, (id_solicitud,))
+    resultado = cursor.fetchone()
+
+    if not resultado:
+        return {"error": "Solicitud no encontrada"}, 404
+
+    id_cliente = resultado['id_cliente']
+    id_transportista = resultado['id_transportista']
+    fecha_solicitada = resultado['fecha_hora']
+
+    # 2. Si se quiere cancelar, verificar que falten al menos 2 horas
+    if nuevo_estado == 'cancelado':
+        ahora = datetime.now()
+        fecha_limite = fecha_solicitada - timedelta(hours=2)
+
+        if ahora > fecha_limite:
+            return {
+                "error": "No se puede cancelar la solicitud con menos de 2 horas de anticipación."
+            }, 400
+
+    # 3. Actualizar estado en la tabla Solicitudes
+    cursor.execute("""
+        UPDATE Solicitudes 
+        SET estado = %s 
+        WHERE id_solicitud = %s
+    """, (nuevo_estado, id_solicitud))
+
+    # 4. Enviar notificaciones según el nuevo estado
+    if nuevo_estado == 'cancelado' and id_transportista:
+        mensaje = "El cliente ha cancelado la solicitud antes del servicio."
+        crear_notificacion(
+            id_usuario=id_transportista,
+            tipo_evento="solicitud_cancelada",
+            tabla="Solicitudes",
+            id_referencia=id_solicitud,
+            mensaje=mensaje
+        )
+
+    elif nuevo_estado in ['confirmado', 'activo', 'finalizado']:
+        mensaje = f"Tu solicitud ha sido marcada como '{nuevo_estado}'."
+        crear_notificacion(
+            id_usuario=id_cliente,
+            tipo_evento=f"solicitud_{nuevo_estado}",
+            tabla="Solicitudes",
+            id_referencia=id_solicitud,
+            mensaje=mensaje
+        )
+
+    conn.commit()
+    return {"mensaje": f"Estado de la solicitud actualizado a '{nuevo_estado}'"}
 
 def list_solicitudes_disponibles(filters: dict):
     """

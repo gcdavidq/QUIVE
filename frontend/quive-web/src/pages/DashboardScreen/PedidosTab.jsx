@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { MapPin, Phone } from 'lucide-react';
+import { MapPin, Phone, X, CreditCard } from 'lucide-react';
 import axios from 'axios';
 
 const PedidosTab = ({ userData, setActiveTab }) => {
@@ -7,14 +7,28 @@ const PedidosTab = ({ userData, setActiveTab }) => {
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [ordenFecha, setOrdenFecha] = useState('recientes');
   const [ordenPrecio, setOrdenPrecio] = useState('ninguno');
-
+  const [showModalMetodoPago, setShowModalMetodoPago] = useState(false);
+  
   useEffect(() => {
     if (!userData?.id_usuario || !userData?.tipo_usuario) return;
     axios.get(`http://localhost:5000/asignaciones/${userData.id_usuario}/${userData.tipo_usuario}`)
       .then(res => setAsignaciones(res.data));
   }, [userData]);
 
+  // Función para verificar si el transportista tiene método de pago
+  const tieneMetodoPago = () => {
+    const metodosSeleccionados = localStorage.getItem('metodosSeleccionados');
+    console.log(metodosSeleccionados);
+    return metodosSeleccionados !== null;
+  };
+
   const responder = (id_asignacion, estado) => {
+    // Si es transportista y está confirmando, verificar método de pago
+    if (estado === 'confirmada' && !tieneMetodoPago()) {
+      setShowModalMetodoPago(true);
+      return;
+    }
+
     axios.post(`http://localhost:5000/asignaciones/${id_asignacion}/respuesta`, { estado })
       .then(() => {
         setAsignaciones(prev =>
@@ -58,6 +72,11 @@ const PedidosTab = ({ userData, setActiveTab }) => {
       if (ordenPrecio === 'mayor') return b.precio - a.precio;
       return 0;
     });
+
+  const irAMetodosPago = () => {
+    setShowModalMetodoPago(false);
+    setActiveTab('perfil/pagos'); // Ajusta la ruta según tu configuración
+  };
 
   return (
     <div>
@@ -152,7 +171,6 @@ const PedidosTab = ({ userData, setActiveTab }) => {
               </div>
             </div>
 
-
             <div className="flex justify-end space-x-2">
               {pedido.estado === 'pendiente' && userData.tipo_usuario === 'transportista' && (
                 <>
@@ -177,6 +195,52 @@ const PedidosTab = ({ userData, setActiveTab }) => {
           </div>
         ))}
       </div>
+
+      {/* Modal de Método de Pago Requerido */}
+      {showModalMetodoPago && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 relative">
+            {/* Botón cerrar */}
+            <button
+              onClick={() => setShowModalMetodoPago(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
+              <X size={24} />
+            </button>
+
+            {/* Contenido del modal */}
+            <div className="text-center">
+              <div className="mb-4">
+                <CreditCard className="mx-auto text-blue-600" size={48} />
+              </div>
+              
+              <h3 className="text-xl font-bold text-gray-800 mb-3">
+                Método de Pago Requerido
+              </h3>
+              
+              <p className="text-gray-600 mb-6">
+                Para confirmar servicios como transportista, debes tener al menos un método de pago vinculado a tu cuenta.
+              </p>
+
+              <div className="flex flex-col space-y-3">
+                <button
+                  onClick={irAMetodosPago}
+                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium"
+                >
+                  Vincular Método de Pago
+                </button>
+                
+                <button
+                  onClick={() => setShowModalMetodoPago(false)}
+                  className="text-gray-500 hover:text-gray-700 font-medium"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

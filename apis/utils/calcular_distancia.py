@@ -40,11 +40,3 @@ def calcular_ruta_ors(origen_txt, destino_txt, ubicacion_transportista_txt):
         raise RuntimeError("Error al consultar OpenRouteService") from e
 
     return resultados
-
-
-origen = "Avenida Alfonso Ugarte , Lima, Lima, Lima, Peru; -12.0513221, -77.0419259"
-destino = "Av. Brasil 1500, Lima, Lima, Lima, Peru; -12.078913, -77.056689"
-ubicacion_transportista = "Av. La Marina, Callao, Lima, Peru; -12.071031, -77.117707"
-
-distancias = calcular_ruta_ors(origen, destino, ubicacion_transportista)
-print(distancias)

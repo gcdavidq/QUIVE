@@ -87,7 +87,7 @@ const PerfilTab = ({ userData, onNavigate, setUserData}) => {
 
         <Route path="editar" element={<EditarPerfilTab userData={userData} setUserData={setUserData}/>} />
         <Route path="direcciones" element={<MisDirecciones />} />
-        <Route path="pagos" element={<MetodosPago />} />
+        <Route path="pagos" element={<MetodosPago userData={userData}/>} />
         <Route path="historial" element={<HistorialMudanzas />} />
         <Route path="configuracion" element={<Configuracion />} />
         <Route path="soporte" element={<AyudaSoporte />} />

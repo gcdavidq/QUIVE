@@ -1,6 +1,6 @@
 import requests
 
-usuario_id = 1
+usuario_id = 5
 url = f"http://127.0.0.1:5000/metodos_pago/{usuario_id}"
 
 # Métodos a registrar

@@ -3,7 +3,7 @@ from api.solicitudes.services import (
     get_solicitud_by_user_id,
     get_solicitud_by_id,
     create_solicitud,
-    update_solicitud,
+    change_estado_solicitud,
     actualizar_solicitud_completa,
     list_solicitudes_disponibles
 )
