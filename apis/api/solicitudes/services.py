@@ -3,7 +3,7 @@ import json
 from datetime import datetime, timedelta
 from db import get_db
 from api.notificaciones.services import crear_notificacion  # Asegúrate de tener esta función disponible
-
+from api.pagos.services import update_pago_by_asignacion
 def get_solicitud_by_user_id(user_id: int):
     """
     Versión corregida para PyMySQL que convierte campos timedelta a strings.
@@ -166,7 +166,7 @@ def actualizar_solicitud_completa(id_solicitud, data):
         "id_solicitud": id_solicitud
     }
 
-def change_estado_solicitud(id_solicitud: int, nuevo_estado: str):
+def change_estado_solicitud(id_solicitud: int, nuevo_estado: str, id_pagador: int, tipo_metodo: str, id_asignacion: int, monto: float):
     conn = get_db()
     cursor = conn.cursor()
 
@@ -187,7 +187,7 @@ def change_estado_solicitud(id_solicitud: int, nuevo_estado: str):
     fecha_solicitada = resultado['fecha_hora']
 
     # 2. Si se quiere cancelar, verificar que falten al menos 2 horas
-    if nuevo_estado == 'cancelado':
+    if nuevo_estado == 'cancelada':
         ahora = datetime.now()
         fecha_limite = fecha_solicitada - timedelta(hours=2)
 
@@ -202,9 +202,14 @@ def change_estado_solicitud(id_solicitud: int, nuevo_estado: str):
         SET estado = %s 
         WHERE id_solicitud = %s
     """, (nuevo_estado, id_solicitud))
-
+    if nuevo_estado == 'confirmada':
+        update_pago_by_asignacion(
+            id_asignacion=id_asignacion,
+        monto_total=monto,
+        pagador_id=id_pagador,
+        tipo_metodo_pagador=tipo_metodo)
     # 4. Enviar notificaciones según el nuevo estado
-    if nuevo_estado == 'cancelado' and id_transportista:
+    if nuevo_estado == 'cancelada' and id_transportista:
         mensaje = "El cliente ha cancelado la solicitud antes del servicio."
         crear_notificacion(
             id_usuario=id_transportista,
@@ -214,7 +219,7 @@ def change_estado_solicitud(id_solicitud: int, nuevo_estado: str):
             mensaje=mensaje
         )
 
-    elif nuevo_estado in ['confirmado', 'activo', 'finalizado']:
+    elif nuevo_estado in ['confirmada', 'activa', 'finalizada']:
         mensaje = f"Tu solicitud ha sido marcada como '{nuevo_estado}'."
         crear_notificacion(
             id_usuario=id_cliente,

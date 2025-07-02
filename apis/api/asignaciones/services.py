@@ -1,5 +1,6 @@
 from db import get_db
 from api.notificaciones.services import crear_notificacion
+from api.pagos.services import create_pago_min
 from datetime import datetime, timedelta
 
 def list_my_asignaciones(user_id, tipo):
@@ -16,6 +17,7 @@ def list_my_asignaciones(user_id, tipo):
                     a.precio,
 
                     s.origen,
+                    s.estado AS estado_solicitud,
                     s.destino,
                     s.distancia,
                     s.fecha_hora,
@@ -77,7 +79,7 @@ def get_asignacion_by_id(id_asignacion: int):
     cursor.execute(sql, (id_asignacion,))
     return cursor.fetchone()
 
-def change_estado_asignacion(id_asignacion: int, nuevo_estado: str):
+def change_estado_asignacion(id_asignacion: int, nuevo_estado: str, metodo_pago: dict, tipo_metodo: str):
     conn = get_db()
     cursor = conn.cursor()
 
@@ -135,8 +137,13 @@ def change_estado_asignacion(id_asignacion: int, nuevo_estado: str):
             mensaje=mensaje
         )
 
+    # 5. Registrar el pago si la asignación fue confirmada
+    if nuevo_estado == 'confirmada' and metodo_pago is not None:
+        create_pago_min(id_asignacion, metodo_pago['id'], tipo_metodo)
+
     conn.commit()
     return {"mensaje": f"Estado actualizado a {nuevo_estado}"}
+
 
 def delete_asignacion(id_asignacion: int) -> bool:
     """

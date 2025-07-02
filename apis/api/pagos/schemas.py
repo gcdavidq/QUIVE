@@ -1,12 +1,13 @@
 from marshmallow import Schema, fields, validate
 
-class CrearPagoSchema(Schema):
-    id_asignacion = fields.Integer(required=True)
-    monto_total = fields.Float(required=True)
-    metodo_pago = fields.String(required=True, validate=validate.OneOf(["tarjeta", "Yape"]))
-    id_metodo = fields.Integer(required=False)
+class CrearPagoMinSchema(Schema):
+    id_asignacion = fields.Int(required=True)
+    receptor_id = fields.Int(required=True)
 
-class MetodoPagoSchema(Schema):
-    tipo = fields.String(required=True, validate=validate.OneOf(["qr", "cci"]))
-    entidad = fields.String(required=True)
-    dato = fields.String(required=True)  # URL de QR o CCI
+class UpdatePagoSchema(Schema):
+    monto_total = fields.Float(required=False)
+    pagador_id = fields.Int(required=False)
+    tipo_metodo = fields.Str(
+        required=False,
+        validate=validate.OneOf(['Tarjeta', 'Yape', 'PayPal'])
+    )

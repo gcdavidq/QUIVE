@@ -1,5 +1,8 @@
 from db import get_db
-from utils.verficar_metodo import obtener_id_metodo_pago, transferir_fondos, obtener_detalle_metodo_externo
+from utils.verficar_metodo import (
+    obtener_id_metodo_pago,
+    transferir_fondos,
+    obtener_detalle_metodo_externo)
 
 
 def listar_metodos_pago_usuario(usuario_id):

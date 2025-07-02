@@ -11,7 +11,7 @@ dayjs.extend(isToday);
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
 
-const Notificaciones = ({ userData }) => {
+const Notificaciones = ({ userData, onNotificacionLeida }) => {
   const navigate = useNavigate();
   const [notificaciones, setNotificaciones] = useState([]);
 
@@ -34,6 +34,10 @@ const Notificaciones = ({ userData }) => {
               : n
           )
         );
+        // Notificar al componente padre que se marcó una notificación como leída
+        if (onNotificacionLeida) {
+          onNotificacionLeida();
+        }
       });
   };
 
@@ -145,4 +149,3 @@ const Notificaciones = ({ userData }) => {
 };
 
 export default Notificaciones;
-

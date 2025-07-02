@@ -32,10 +32,12 @@ def post_asignacion():
 
 @asignaciones_bp.route('/<int:id_asignacion>/respuesta', methods=['POST'])
 def responder_asignacion(id_asignacion):
-    data = request.json
-    nuevo_estado = data.get('estado') # 'confirmado' o 'rechazado'
-    resultado = change_estado_asignacion(id_asignacion, nuevo_estado)
-    print(resultado)
+    data = request.get_json()
+    nuevo_estado = data['estado']
+    metodo_pago = data['metodo_pago']
+    tipo_metodo = data['tipo_metodo']
+    print(data)
+    change_estado_asignacion(id_asignacion, nuevo_estado, metodo_pago, tipo_metodo)
     return jsonify({"mensaje": "Estado actualizado y notificación creada."})
 
 

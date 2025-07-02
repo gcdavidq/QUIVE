@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Star, MapPin, CreditCard, Smartphone, Settings } from 'lucide-react';
+import { Star, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
+import PaymentMethodSelector from '../utils/PaymentMethodSelector';
 
 const MetodosPago = ({ formData, actualizarFormData, volver, handleCancelar }) => {
   const navigate = useNavigate();
   const [mensaje, setMensaje] = useState('');
   const [metodosSeleccionados, setMetodosSeleccionados] = useState({});
-  const [metodoActivo, setMetodoActivo] = useState(''); // Método de pago seleccionado actualmente
-  const [datosTarjeta, setDatosTarjeta] = useState({ numero: '', vencimiento: '', titular: '', cvc: '' });
-  const [datosYape, setDatosYape] = useState({ dni: '', numero: '', codigo: '' });
-  const [datosPaypal, setDatosPaypal] = useState({ email: '', password: '' });
+  const [metodoActivo, setMetodoActivo] = useState('');
   const [terminos, setTerminos] = useState({ marketing: false, privacidad: false });
   const [vibrarTerminos, setVibrarTerminos] = useState(false);
 
@@ -25,31 +23,6 @@ const MetodosPago = ({ formData, actualizarFormData, volver, handleCancelar }) =
       const metodosDisponibles = Object.keys(metodos);
       if (metodosDisponibles.length > 0) {
         setMetodoActivo(metodosDisponibles[0]);
-      }
-      
-      // Llenar los datos según los métodos seleccionados
-      if (metodos.Tarjeta) {
-        setDatosTarjeta({
-          numero: metodos.Tarjeta.detalle.numero || '',
-          vencimiento: metodos.Tarjeta.detalle.vencimiento || '',
-          titular: metodos.Tarjeta.detalle.nombre || '',
-          cvc: metodos.Tarjeta.detalle.cvv || ''
-        });
-      }
-      
-      if (metodos.Yape) {
-        setDatosYape({
-          dni: '',
-          numero: '',
-          codigo: metodos.Yape.detalle.codigo || ''
-        });
-      }
-      
-      if (metodos.PayPal) {
-        setDatosPaypal({
-          email: metodos.PayPal.detalle.correo || '',
-          password: metodos.PayPal.detalle.contrasena || ''
-        });
       }
     }
   }, []);
@@ -85,26 +58,28 @@ const MetodosPago = ({ formData, actualizarFormData, volver, handleCancelar }) =
       // Actualizar el estado de la solicitud a 'confirmado'
       const solicitudActualizada = {
         ...formData,
-        estado: 'confirmado'
+        estado: 'confirmada'
       };
-
-      // Usar el método activo seleccionado
-      const metodoPrincipal = metodoActivo === 'Tarjeta' ? 'card' : 
-                              metodoActivo === 'Yape' ? 'yape' : 
-                              metodoActivo === 'PayPal' ? 'paypal' : null;
-
-      const datosPago = metodoPrincipal === 'card' ? datosTarjeta : 
-                        metodoPrincipal === 'yape' ? datosYape : datosPaypal;
-
-      const response = await fetch(`http://127.0.0.1:5000/solicitudes/${formData?.id_solicitud}/confirmar`, {
-        method: 'POST',
+      // Obtener los datos del método seleccionado
+      const metodoSeleccionado = metodosSeleccionados[metodoActivo];
+      console.log("Solicitud actualizada:", JSON.stringify({
+          id_asignacion: formData?.asignacion?.id_asignacion,
+          metodo_pago: metodoSeleccionado?.id,
+          monto: formData.conductor?.precio,
+          estado: 'confirmada',
+          tipo_metodo: metodoActivo
+        }));
+      const response = await fetch(`http://127.0.0.1:5000/solicitudes/actualizar_estado/${formData?.id_solicitud}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          metodo_pago: metodoPrincipal,
-          datos_pago: datosPago,
-          estado: 'confirmado'
+          id_asignacion: formData?.asignacion?.id_asignacion,
+          metodo_pago: metodoSeleccionado?.id,
+          monto: formData.conductor?.precio,
+          estado: 'confirmada',
+          tipo_metodo: metodoActivo
         })
       });
 
@@ -129,47 +104,10 @@ const MetodosPago = ({ formData, actualizarFormData, volver, handleCancelar }) =
     navigate('../perfil/pagos');
   };
 
-  const getMethodIcon = (tipo) => {
-    switch (tipo) {
-      case 'Tarjeta':
-        return <CreditCard className="w-5 h-5 text-blue-600" />;
-      case 'Yape':
-        return <Smartphone className="w-5 h-5 text-purple-600" />;
-      case 'PayPal':
-        return <CreditCard className="w-5 h-5 text-indigo-600" />;
-      default:
-        return <CreditCard className="w-5 h-5 text-gray-600" />;
-    }
-  };
-
-  const formatCardNumber = (numero) => {
-    if (!numero) return '';
-    const lastFour = numero.slice(-4);
-    return `•••• ${lastFour}`;
-  };
-
-  const getMethodDisplayName = (metodo) => {
-    switch (metodo.tipo) {
-      case 'Tarjeta':
-        return `Tarjeta ${formatCardNumber(metodo.detalle.numero)}`;
-      case 'Yape':
-        return `Yape - ${metodo.detalle.codigo}`;
-      case 'PayPal':
-        return `PayPal - ${metodo.detalle.correo}`;
-      default:
-        return metodo.tipo;
-    }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', { month: '2-digit', year: '2-digit' });
-  };
-
   return (
     <div className="p-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Columna izquierda - Resumen */}
         <div className="space-y-6">
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <h3 className="text-lg font-bold text-blue-600 mb-4 text-center">RESUMEN</h3>
@@ -270,130 +208,20 @@ const MetodosPago = ({ formData, actualizarFormData, volver, handleCancelar }) =
           </div>
         </div>
 
+        {/* Columna derecha - Métodos de Pago */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h3 className="text-lg font-bold text-blue-600 mb-6 text-center">MÉTODOS DE PAGO</h3>
           
-          <div className="space-y-4 mb-6">
-            {/* Mostrar métodos de pago con selección circular */}
-            {['Tarjeta', 'Yape', 'PayPal'].map(tipo => {
-              const metodoSeleccionado = metodosSeleccionados[tipo];
-              const estaActivo = metodoActivo === tipo;
-              const estaDisponible = !!metodoSeleccionado;
-              
-              return (
-                <div 
-                  key={tipo} 
-                  className={clsx(
-                    "border rounded-lg p-4 transition-all duration-200 cursor-pointer",
-                    estaActivo && estaDisponible ? 'bg-blue-50 border-blue-300 shadow-md' : 'bg-gray-50',
-                    estaDisponible ? 'hover:bg-blue-25 hover:border-blue-200' : 'opacity-60 cursor-not-allowed'
-                  )}
-                  onClick={() => estaDisponible && handleSeleccionarMetodo(tipo)}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-3">
-                      {/* Botón circular de selección */}
-                      <div className={clsx(
-                        "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200",
-                        estaActivo && estaDisponible ? 'border-blue-500 bg-blue-500' : 
-                        estaDisponible ? 'border-gray-300 hover:border-blue-400' : 'border-gray-200'
-                      )}>
-                        {estaActivo && estaDisponible && (
-                          <div className="w-2 h-2 bg-white rounded-full"></div>
-                        )}
-                      </div>
-                      
-                      <div className="p-2 bg-white rounded-lg shadow-sm">
-                        {getMethodIcon(tipo)}
-                      </div>
-                      <span className="font-medium text-gray-700">
-                        {tipo === 'Tarjeta' ? 'Tarjeta de Crédito/Débito' : 
-                         tipo === 'Yape' ? 'Yape/Plin' : 'PayPal'}
-                      </span>
-                    </div>
-                    
-                    {estaActivo && estaDisponible && (
-                      <span className="text-blue-600 text-sm font-medium bg-blue-100 px-2 py-1 rounded-full">
-                        Seleccionado
-                      </span>
-                    )}
-                  </div>
-                  
-                  {estaActivo && metodoSeleccionado && (
-                    <div className="bg-white rounded-lg p-4 border-l-4 border-blue-500 transition-all duration-200 mt-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium text-gray-800">
-                          {getMethodDisplayName(metodoSeleccionado)}
-                        </span>
-                        <span className="text-green-600 text-sm font-medium">✓ Disponible</span>
-                      </div>
-                      
-                      {/* Detalles específicos por tipo */}
-                      {tipo === 'Tarjeta' && metodoSeleccionado.detalle && (
-                        <div className="text-sm text-gray-600 space-y-1">
-                          <div>Titular: {metodoSeleccionado.detalle.nombre || 'No especificado'}</div>
-                          {metodoSeleccionado.detalle.vencimiento && (
-                            <div>Vence: {formatDate(metodoSeleccionado.detalle.vencimiento)}</div>
-                          )}
-                        </div>
-                      )}
-                      
-                      {tipo === 'Yape' && metodoSeleccionado.detalle && (
-                        <div className="text-sm text-gray-600">
-                          Código: {metodoSeleccionado.detalle.codigo}
-                        </div>
-                      )}
-                      
-                      {tipo === 'PayPal' && metodoSeleccionado.detalle && (
-                        <div className="text-sm text-gray-600">
-                          Email: {metodoSeleccionado.detalle.correo}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  {!metodoSeleccionado && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-3">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-                        <span className="text-yellow-800 text-sm">
-                          No tienes ningún método de {tipo} configurado
-                        </span>
-                      </div>
-                      <p className="text-yellow-700 text-xs mt-1">
-                        Configura este método desde el botón de gestionar métodos de pago
-                      </p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Método de pago seleccionado actualmente */}
-          {metodoActivo && metodosSeleccionados[metodoActivo] && (
-            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <h4 className="font-semibold text-blue-900 mb-2">Método de pago para el cobro:</h4>
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-white rounded-lg shadow-sm">
-                  {getMethodIcon(metodoActivo)}
-                </div>
-                <span className="font-medium text-blue-800">
-                  {getMethodDisplayName(metodosSeleccionados[metodoActivo])}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Botón para gestionar métodos de pago */}
+          {/* Componente reutilizable de métodos de pago */}
           <div className="mb-6">
-            <button
-              onClick={handleGestionarMetodos}
-              className="w-full flex items-center justify-center space-x-2 py-3 px-4 border border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium"
-            >
-              <Settings className="w-5 h-5" />
-              <span>Gestionar Métodos de Pago</span>
-            </button>
+            <PaymentMethodSelector
+              metodosSeleccionados={metodosSeleccionados}
+              metodoActivo={metodoActivo}
+              onSeleccionarMetodo={handleSeleccionarMetodo}
+              onGestionarMetodos={handleGestionarMetodos}
+              showGestionarButton={true}
+              showSelectedMethod={true}
+            />
           </div>
 
           {/* Términos y condiciones */}

@@ -1,12 +1,5 @@
 import clsx from 'clsx';
 
-/**
- * PaymentDetails recibe props:
- * - metodoSeleccionado: 'card' | 'yape' | 'paypal'
- * - datosTarjeta, datosYape, datosPaypal: objetos con datos
- * - errores: objeto con mensajes de error
- * - handleInputChange: función para actualizar datos
- */
 const PaymentDetails = ({
   metodoSeleccionado,
   datosTarjeta,

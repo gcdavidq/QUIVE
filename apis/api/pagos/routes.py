@@ -1,86 +1,61 @@
 from flask import Blueprint, request, jsonify
 from api.pagos.services import (
-    list_my_pagos,
-    create_pago,
-    webhook_pago,
-    list_my_metodos,
-    create_metodo,
-    update_metodo,
-    delete_metodo
+    create_pago_min,
+    update_pago_by_asignacion,
+    get_pago_by_asignacion
 )
-from api.pagos.schemas import CrearPagoSchema, MetodoPagoSchema
+from api.pagos.schemas import (
+    CrearPagoMinSchema,
+    UpdatePagoSchema
+)
 from marshmallow import ValidationError
 
 pagos_bp = Blueprint("pagos_bp", __name__)
 
-@pagos_bp.route("/me", methods=["GET"])
-def get_me_pagos():
-    pagos = list_my_pagos()
-    return jsonify(pagos), 200
-
-@pagos_bp.route("", methods=["POST"])
-def post_pago():
-    payload = request.get_json()
-    schema = CrearPagoSchema()
+@pagos_bp.route("/pagos", methods=["POST"])
+def create_pago_route():
+    """
+    Crea un pago mínimo con id_asignacion y receptor_id.
+    """
     try:
-        data = schema.load(payload)
+        data = CrearPagoMinSchema().load(request.json)
     except ValidationError as err:
-        return jsonify({"errors": err.messages}), 400
+        return jsonify(err.messages), 400
 
-    resultado = create_pago(data)
-    if "error" in resultado:
-        return jsonify({"msg": resultado["error"]}), 400
-    return jsonify(resultado), 201
+    nuevo_id = create_pago_min(
+        id_asignacion=data['id_asignacion'],
+        receptor_id=data['receptor_id'],
+        tipo_metodo_receptor=data['tipo_metodo']
+    )
+    return jsonify({'id_pago': nuevo_id}), 201
 
-@pagos_bp.route("/webhook", methods=["POST"])
-def post_webhook():
-    payload = request.get_json()
-    resultado = webhook_pago(payload)
-    if "error" in resultado:
-        return jsonify({"msg": resultado["error"]}), 400
-    return jsonify(resultado), 200
-
-@pagos_bp.route("/<int:id_pago>/reembolsar", methods=["PUT"])
-def put_reembolsar(id_pago):
-    # Sólo ADMIN
-    resultado = refund_pago(id_pago)
-    return jsonify(resultado), 200
-
-# --- Métodos de Pago del cliente ---
-@pagos_bp.route("/metodos-pago/me", methods=["GET"])
-def get_me_metodos():
-    metodos = list_my_metodos()
-    return jsonify(metodos), 200
-
-@pagos_bp.route("/metodos-pago/me", methods=["POST"])
-def post_me_metodos():
-    payload = request.get_json()
-    schema = MetodoPagoSchema()
+@pagos_bp.route("/pagos/<int:id_asignacion>", methods=["PATCH"])
+def update_pago_route(id_asignacion):
+    """
+    Actualiza montos, pagador y tipo de método para un pago existente.
+    """
     try:
-        data = schema.load(payload)
+        data = UpdatePagoSchema().load(request.json)
     except ValidationError as err:
-        return jsonify({"errors": err.messages}), 400
-    nuevo = create_metodo(data)
-    if "error" in nuevo:
-        return jsonify({"msg": nuevo["error"]}), 400
-    return jsonify(nuevo), 201
+        return jsonify(err.messages), 400
 
-@pagos_bp.route("/metodos-pago/me/<int:id_metodo>", methods=["PUT"])
-def put_me_metodos(id_metodo):
-    payload = request.get_json()
-    schema = MetodoPagoSchema(partial=True)
-    try:
-        data = schema.load(payload)
-    except ValidationError as err:
-        return jsonify({"errors": err.messages}), 400
-    updated = update_metodo(id_metodo, data)
-    if "error" in updated:
-        return jsonify({"msg": updated["error"]}), 400
-    return jsonify(updated), 200
+    updated = update_pago_by_asignacion(
+        id_asignacion,
+        monto_total=data.get('monto_total'),
+        pagador_id=data.get('pagador_id'),
+        tipo_metodo_pagador=data.get('tipo_metodo')
+    )
+    if updated:
+        return jsonify({'updated_rows': updated}), 200
+    else:
+        return jsonify({'message': 'Nothing to update or assignment not found.'}), 404
 
-@pagos_bp.route("/metodos-pago/me/<int:id_metodo>", methods=["DELETE"])
-def delete_me_metodos(id_metodo):
-    resultado = delete_metodo(id_metodo)
-    if "error" in resultado:
-        return jsonify({"msg": resultado["error"]}), 400
-    return jsonify(resultado), 200
+@pagos_bp.route("/pagos/<int:id_asignacion>", methods=["GET"])
+def get_pago_route(id_asignacion):
+    """
+    Obtiene el pago asociado a la asignación dada.
+    """
+    pago = get_pago_by_asignacion(id_asignacion)
+    if pago:
+        return jsonify(pago), 200
+    return jsonify({'message': 'Pago not found.'}), 404

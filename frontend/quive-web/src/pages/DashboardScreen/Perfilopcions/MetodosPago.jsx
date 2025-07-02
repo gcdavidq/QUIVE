@@ -444,235 +444,239 @@ const MetodosPago = ({userData}) => {
 
         {/* Payment Methods List by Type */}
         <div className="space-y-4">
-          {metodosPago.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                <CreditCard className="w-8 h-8 text-gray-400" />
-              </div>
-              <p className="text-gray-500 text-lg">No tienes métodos de pago registrados</p>
-              <p className="text-gray-400 text-sm mt-1">Agrega tu primer método de pago</p>
-            </div>
-          ) : (
-            ['Tarjeta', 'Yape', 'PayPal'].map((tipo) => {
-              const metodos = groupedMethods[tipo] || [];
-              return (
-              <div
-                key={tipo}
-                className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden hover:shadow-xl transition-all duration-300"
-              >
-                {/* Type Header */}
-                <div
-                  className="p-6 cursor-pointer hover:bg-gray-50/50 transition-all duration-200 border-b border-gray-100"
-                  onClick={() => toggleExpandedType(tipo)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="p-3 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl">
-                        {getMethodIcon(tipo)}
-                      </div>
-                      <div>
-                        <div className="font-semibold text-gray-800 text-lg">
-                          {tipo}
-                        </div>
-                        <div className="text-gray-500 text-sm">
-                          {metodos.length} método{metodos.length !== 1 ? 's' : ''} disponible{metodos.length !== 1 ? 's' : ''}
-                          {selectedMethods[tipo] && (
-                            <span className="ml-2 text-blue-600 font-medium">
-                              • {getMethodDisplayName(selectedMethods[tipo])} seleccionado
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      {expandedTypeId === tipo ? (
-                        <ChevronUp className="w-5 h-5 text-gray-400" />
-                      ) : (
-                        <ChevronDown className="w-5 h-5 text-gray-400" />
-                      )}
-                    </div>
-                  </div>
+          {(!showAddForm) && (
+          <div className="space-y-4">
+            {metodosPago.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                  <CreditCard className="w-8 h-8 text-gray-400" />
                 </div>
-
-                {/* Methods of this type */}
-                {expandedTypeId === tipo && (
-                  <div className="divide-y divide-gray-100">
-                    {metodos.length === 0 ? (
-                      <div className="p-6 text-center">
-                        <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                <p className="text-gray-500 text-lg">No tienes métodos de pago registrados</p>
+                <p className="text-gray-400 text-sm mt-1">Agrega tu primer método de pago</p>
+              </div>
+            ) : (
+              ['Tarjeta', 'Yape', 'PayPal'].map((tipo) => {
+                const metodos = groupedMethods[tipo] || [];
+                return (
+                <div
+                  key={tipo}
+                  className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden hover:shadow-xl transition-all duration-300"
+                >
+                  {/* Type Header */}
+                  <div
+                    className="p-6 cursor-pointer hover:bg-gray-50/50 transition-all duration-200 border-b border-gray-100"
+                    onClick={() => toggleExpandedType(tipo)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="p-3 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl">
                           {getMethodIcon(tipo)}
                         </div>
-                        <p className="text-gray-500 text-base">No tienes métodos de {tipo} registrados</p>
-                        <p className="text-gray-400 text-sm mt-1">Agrega tu primer método de {tipo}</p>
-                      </div>
-                    ) : (
-                      metodos.map((metodo) => (
-                      <div key={metodo.id} className="bg-white/50">
-                        {/* Individual Method Display */}
-                        <div
-                          className="p-6 cursor-pointer hover:bg-gray-50/50 transition-all duration-200"
-                          onClick={() => toggleExpandedMethod(metodo.id)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4">
-                              {/* Selection Button */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSelectMethod(metodo);
-                                }}
-                                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
-                                  selectedMethods[tipo]?.id === metodo.id
-                                    ? 'border-blue-600 bg-blue-600 text-white'
-                                    : 'border-gray-300 hover:border-blue-400'
-                                }`}
-                              >
-                                {selectedMethods[tipo]?.id === metodo.id && (
-                                  <Check size={14} />
-                                )}
-                              </button>
-                              
-                              <div>
-                                <div className="font-medium text-gray-800">
-                                  {getMethodDisplayName(metodo)}
-                                </div>
-                                <div className="text-gray-500 text-sm">
-                                  {metodo.tipo === 'Tarjeta' && metodo.detalle.vencimiento && 
-                                    `Vence ${formatDate(metodo.detalle.vencimiento)}`
-                                  }
-                                  {metodo.detalle.saldo && (
-                                    <span className="ml-2 text-green-600 font-medium">
-                                      Saldo: S/ {metodo.detalle.saldo}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditMethod(metodo);
-                                }}
-                                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
-                              >
-                                <Edit2 size={18} />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteMethod(metodo.id);
-                                }}
-                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-                              >
-                                <Trash2 size={18} />
-                              </button>
-                              {expandedMethodId === metodo.id ? (
-                                <ChevronUp className="w-5 h-5 text-gray-400" />
-                              ) : (
-                                <ChevronDown className="w-5 h-5 text-gray-400" />
-                              )}
-                            </div>
+                        <div>
+                          <div className="font-semibold text-gray-800 text-lg">
+                            {tipo}
+                          </div>
+                          <div className="text-gray-500 text-sm">
+                            {metodos.length} método{metodos.length !== 1 ? 's' : ''} disponible{metodos.length !== 1 ? 's' : ''}
+                            {selectedMethods[tipo] && (
+                              <span className="ml-2 text-blue-600 font-medium">
+                                • {getMethodDisplayName(selectedMethods[tipo])} seleccionado
+                              </span>
+                            )}
                           </div>
                         </div>
+                      </div>
+                      <div className="flex items-center">
+                        {expandedTypeId === tipo ? (
+                          <ChevronUp className="w-5 h-5 text-gray-400" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-gray-400" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
 
-                        {/* Expanded Method Details */}
-                        {expandedMethodId === metodo.id && (
-                          <div className="px-6 pb-6 border-t border-gray-100">
-                            <div className="pt-4 space-y-3">
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl">
-                                  <div className="text-sm font-medium text-gray-600 mb-1">Tipo</div>
-                                  <div className="text-gray-900 font-semibold">{metodo.tipo}</div>
+                  {/* Methods of this type */}
+                  {expandedTypeId === tipo && (
+                    <div className="divide-y divide-gray-100">
+                      {metodos.length === 0 ? (
+                        <div className="p-6 text-center">
+                          <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                            {getMethodIcon(tipo)}
+                          </div>
+                          <p className="text-gray-500 text-base">No tienes métodos de {tipo} registrados</p>
+                          <p className="text-gray-400 text-sm mt-1">Agrega tu primer método de {tipo}</p>
+                        </div>
+                      ) : (
+                        metodos.map((metodo) => (
+                        <div key={metodo.id} className="bg-white/50">
+                          {/* Individual Method Display */}
+                          <div
+                            className="p-6 cursor-pointer hover:bg-gray-50/50 transition-all duration-200"
+                            onClick={() => toggleExpandedMethod(metodo.id)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-4">
+                                {/* Selection Button */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSelectMethod(metodo);
+                                  }}
+                                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
+                                    selectedMethods[tipo]?.id === metodo.id
+                                      ? 'border-blue-600 bg-blue-600 text-white'
+                                      : 'border-gray-300 hover:border-blue-400'
+                                  }`}
+                                >
+                                  {selectedMethods[tipo]?.id === metodo.id && (
+                                    <Check size={14} />
+                                  )}
+                                </button>
+                                
+                                <div>
+                                  <div className="font-medium text-gray-800">
+                                    {getMethodDisplayName(metodo)}
+                                  </div>
+                                  <div className="text-gray-500 text-sm">
+                                    {metodo.tipo === 'Tarjeta' && metodo.detalle.vencimiento && 
+                                      `Vence ${formatDate(metodo.detalle.vencimiento)}`
+                                    }
+                                    {metodo.detalle.saldo && (
+                                      <span className="ml-2 text-green-600 font-medium">
+                                        Saldo: S/ {metodo.detalle.saldo}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
-                                {metodo.detalle.saldo && (
-                                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl">
-                                    <div className="text-sm font-medium text-gray-600 mb-1">Saldo Disponible</div>
-                                    <div className="text-gray-900 font-semibold">S/ {metodo.detalle.saldo}</div>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditMethod(metodo);
+                                  }}
+                                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
+                                >
+                                  <Edit2 size={18} />
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteMethod(metodo.id);
+                                  }}
+                                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                                >
+                                  <Trash2 size={18} />
+                                </button>
+                                {expandedMethodId === metodo.id ? (
+                                  <ChevronUp className="w-5 h-5 text-gray-400" />
+                                ) : (
+                                  <ChevronDown className="w-5 h-5 text-gray-400" />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Expanded Method Details */}
+                          {expandedMethodId === metodo.id && (
+                            <div className="px-6 pb-6 border-t border-gray-100">
+                              <div className="pt-4 space-y-3">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl">
+                                    <div className="text-sm font-medium text-gray-600 mb-1">Tipo</div>
+                                    <div className="text-gray-900 font-semibold">{metodo.tipo}</div>
+                                  </div>
+                                  {metodo.detalle.saldo && (
+                                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl">
+                                      <div className="text-sm font-medium text-gray-600 mb-1">Saldo Disponible</div>
+                                      <div className="text-gray-900 font-semibold">S/ {metodo.detalle.saldo}</div>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Detalles específicos por tipo */}
+                                {metodo.tipo === 'Tarjeta' && (
+                                  <>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-xl">
+                                        <div className="text-sm font-medium text-gray-600 mb-1">Titular</div>
+                                        <div className="text-gray-900 font-semibold">{metodo.detalle.nombre || 'No especificado'}</div>
+                                      </div>
+                                      <div className="bg-gradient-to-br from-yellow-50 to-orange-50 p-4 rounded-xl">
+                                        <div className="text-sm font-medium text-gray-600 mb-1">Número completo</div>
+                                        <div className="text-gray-900 font-semibold font-mono">
+                                          {metodo.detalle.numero.replace(/(.{4})/g, '$1 ').trim()}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {metodo.detalle.vencimiento && (
+                                        <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-4 rounded-xl">
+                                          <div className="text-sm font-medium text-gray-600 mb-1">Fecha de Vencimiento</div>
+                                          <div className="text-gray-900 font-semibold">
+                                            {new Date(metodo.detalle.vencimiento).toLocaleDateString('es-ES', {
+                                              day: 'numeric',
+                                              month: 'long',
+                                              year: 'numeric'
+                                            })}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {metodo.detalle.cvv && (
+                                        <div className="bg-gradient-to-br from-rose-50 to-pink-50 p-4 rounded-xl">
+                                          <div className="text-sm font-medium text-gray-600 mb-1">CVV</div>
+                                          <div className="text-gray-900 font-semibold font-mono">•••</div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </>
+                                )}
+
+                                {metodo.tipo === 'Yape' && (
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="bg-gradient-to-br from-purple-50 to-violet-50 p-4 rounded-xl">
+                                      <div className="text-sm font-medium text-gray-600 mb-1">Código Yape</div>
+                                      <div className="text-gray-900 font-semibold font-mono">{metodo.detalle.codigo}</div>
+                                    </div>
+                                    <div className="bg-gradient-to-br from-cyan-50 to-blue-50 p-4 rounded-xl">
+                                      <div className="text-sm font-medium text-gray-600 mb-1">Estado</div>
+                                      <div className="text-gray-900 font-semibold">
+                                        {metodo.detalle.activo ? (
+                                          <span className="text-green-600">✓ Activo</span>
+                                        ) : (
+                                          <span className="text-red-600">✗ Inactivo</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {metodo.tipo === 'PayPal' && (
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-4 rounded-xl">
+                                      <div className="text-sm font-medium text-gray-600 mb-1">Correo Electrónico</div>
+                                      <div className="text-gray-900 font-semibold">{metodo.detalle.correo}</div>
+                                    </div>
+                                    <div className="bg-gradient-to-br from-slate-50 to-gray-50 p-4 rounded-xl">
+                                      <div className="text-sm font-medium text-gray-600 mb-1">Contraseña</div>
+                                      <div className="text-gray-900 font-semibold font-mono">••••••••</div>
+                                    </div>
                                   </div>
                                 )}
                               </div>
-
-                              {/* Detalles específicos por tipo */}
-                              {metodo.tipo === 'Tarjeta' && (
-                                <>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-xl">
-                                      <div className="text-sm font-medium text-gray-600 mb-1">Titular</div>
-                                      <div className="text-gray-900 font-semibold">{metodo.detalle.nombre || 'No especificado'}</div>
-                                    </div>
-                                    <div className="bg-gradient-to-br from-yellow-50 to-orange-50 p-4 rounded-xl">
-                                      <div className="text-sm font-medium text-gray-600 mb-1">Número completo</div>
-                                      <div className="text-gray-900 font-semibold font-mono">
-                                        {metodo.detalle.numero.replace(/(.{4})/g, '$1 ').trim()}
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {metodo.detalle.vencimiento && (
-                                      <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-4 rounded-xl">
-                                        <div className="text-sm font-medium text-gray-600 mb-1">Fecha de Vencimiento</div>
-                                        <div className="text-gray-900 font-semibold">
-                                          {new Date(metodo.detalle.vencimiento).toLocaleDateString('es-ES', {
-                                            day: 'numeric',
-                                            month: 'long',
-                                            year: 'numeric'
-                                          })}
-                                        </div>
-                                      </div>
-                                    )}
-                                    {metodo.detalle.cvv && (
-                                      <div className="bg-gradient-to-br from-rose-50 to-pink-50 p-4 rounded-xl">
-                                        <div className="text-sm font-medium text-gray-600 mb-1">CVV</div>
-                                        <div className="text-gray-900 font-semibold font-mono">•••</div>
-                                      </div>
-                                    )}
-                                  </div>
-                                </>
-                              )}
-
-                              {metodo.tipo === 'Yape' && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <div className="bg-gradient-to-br from-purple-50 to-violet-50 p-4 rounded-xl">
-                                    <div className="text-sm font-medium text-gray-600 mb-1">Código Yape</div>
-                                    <div className="text-gray-900 font-semibold font-mono">{metodo.detalle.codigo}</div>
-                                  </div>
-                                  <div className="bg-gradient-to-br from-cyan-50 to-blue-50 p-4 rounded-xl">
-                                    <div className="text-sm font-medium text-gray-600 mb-1">Estado</div>
-                                    <div className="text-gray-900 font-semibold">
-                                      {metodo.detalle.activo ? (
-                                        <span className="text-green-600">✓ Activo</span>
-                                      ) : (
-                                        <span className="text-red-600">✗ Inactivo</span>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-
-                              {metodo.tipo === 'PayPal' && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-4 rounded-xl">
-                                    <div className="text-sm font-medium text-gray-600 mb-1">Correo Electrónico</div>
-                                    <div className="text-gray-900 font-semibold">{metodo.detalle.correo}</div>
-                                  </div>
-                                  <div className="bg-gradient-to-br from-slate-50 to-gray-50 p-4 rounded-xl">
-                                    <div className="text-sm font-medium text-gray-600 mb-1">Contraseña</div>
-                                    <div className="text-gray-900 font-semibold font-mono">••••••••</div>
-                                  </div>
-                                </div>
-                              )}
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    ))
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-            })
+                          )}
+                        </div>
+                      ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+              })
+            )}
+          </div>
           )}
         </div>
       </div>
