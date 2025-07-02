@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from db import get_db
 from api.notificaciones.services import crear_notificacion  # Asegúrate de tener esta función disponible
 from api.pagos.services import update_pago_by_asignacion
+
 def get_solicitud_by_user_id(user_id: int):
     """
     Versión corregida para PyMySQL que convierte campos timedelta a strings.
@@ -166,7 +167,7 @@ def actualizar_solicitud_completa(id_solicitud, data):
         "id_solicitud": id_solicitud
     }
 
-def change_estado_solicitud(id_solicitud: int, nuevo_estado: str, id_pagador: int, tipo_metodo: str, id_asignacion: int, monto: float):
+def change_estado_solicitud(id_solicitud: int, nuevo_estado: str, data: dict):
     conn = get_db()
     cursor = conn.cursor()
 
@@ -202,12 +203,13 @@ def change_estado_solicitud(id_solicitud: int, nuevo_estado: str, id_pagador: in
         SET estado = %s 
         WHERE id_solicitud = %s
     """, (nuevo_estado, id_solicitud))
+
     if nuevo_estado == 'confirmada':
-        update_pago_by_asignacion(
-            id_asignacion=id_asignacion,
-        monto_total=monto,
-        pagador_id=id_pagador,
-        tipo_metodo_pagador=tipo_metodo)
+        pago = update_pago_by_asignacion(
+            id_asignacion=data['id_asignacion'],
+        monto_total=data['monto'],
+        pagador_id=data['metodo_pago'],
+        tipo_metodo_pagador=data['tipo_metodo'])
     # 4. Enviar notificaciones según el nuevo estado
     if nuevo_estado == 'cancelada' and id_transportista:
         mensaje = "El cliente ha cancelado la solicitud antes del servicio."

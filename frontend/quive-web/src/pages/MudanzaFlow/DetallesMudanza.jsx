@@ -198,6 +198,7 @@ const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, 
               if (!res.ok) { alert(data.msg || 'Error al procesar mudanza'); return; }
               actualizarFormData({ id_solicitud: data.id_solicitud || formData.id_solicitud, origen: origenFinal, destino: destinoFinal, distancia: distanciaKm, tiempos_estimado: duracionMin, ruta: rutaGeo, hora: formData.hora, fecha: formData.fecha });
               nextStep();
+              return; 
             } catch (err) { console.error('Error al conectar con API:', err); alert('Error de red.'); }
           }}
           className="w-full bg-blue-500 text-white py-3 rounded-lg font-medium mt-6 hover:bg-blue-600 transition-colors"

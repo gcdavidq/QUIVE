@@ -54,11 +54,7 @@ def put_solicitud(id_solicitud):
 def put_estado_solicitud(id_solicitud):
     payload = request.get_json()
     nuevo_estado = payload['estado']
-    id_pagador = payload['metodo_pago']
-    tipo_metodo = payload['tipo_metodo']
-    id_asignacion = payload['id_asignacion']
-    monto = payload['monto']
-    resultado = change_estado_solicitud(id_solicitud, nuevo_estado, id_pagador, tipo_metodo, id_asignacion, monto)
+    resultado = change_estado_solicitud(id_solicitud, nuevo_estado, payload)
     return jsonify(resultado), 201
 
 @solicitudes_bp.route("/<int:id_solicitud>/elegido", methods=["PUT"])

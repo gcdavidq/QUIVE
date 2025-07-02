@@ -79,10 +79,10 @@ def get_asignacion_by_id(id_asignacion: int):
     cursor.execute(sql, (id_asignacion,))
     return cursor.fetchone()
 
-def change_estado_asignacion(id_asignacion: int, nuevo_estado: str, metodo_pago: dict, tipo_metodo: str):
+def change_estado_asignacion(id_asignacion: int, data: dict):
     conn = get_db()
     cursor = conn.cursor()
-
+    nuevo_estado = data['estado']
     # 1. Obtener solicitud relacionada y su hora programada
     cursor.execute("""
         SELECT s.id_cliente, a.id_transportista, s.fecha_hora
@@ -138,7 +138,9 @@ def change_estado_asignacion(id_asignacion: int, nuevo_estado: str, metodo_pago:
         )
 
     # 5. Registrar el pago si la asignación fue confirmada
-    if nuevo_estado == 'confirmada' and metodo_pago is not None:
+    if nuevo_estado == 'confirmada' and 'metodo_pago' in data:
+        metodo_pago = data['metodo_pago']
+        tipo_metodo = data['tipo_metodo']
         create_pago_min(id_asignacion, metodo_pago['id'], tipo_metodo)
 
     conn.commit()

@@ -392,6 +392,17 @@ const PedidosTab = ({ userData, setActiveTab }) => {
                     >
                       {procesandoRespuesta === pedido.id_asignacion ? 'Procesando...' : 'Aceptar'}
                     </button>
+                    <button
+                      onClick={() => responder(pedido.id_asignacion, 'rechazada')}
+                      disabled={procesandoRespuesta === pedido.id_asignacion}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        procesandoRespuesta === pedido.id_asignacion
+                          ? 'bg-gray-400 text-white cursor-not-allowed'
+                          : 'bg-red-600 text-white hover:bg-red-700'
+                      }`}
+                    >
+                      {procesandoRespuesta === pedido.id_asignacion ? 'Procesando...' : 'Rechazar'}
+                    </button>
                   </>
                 )}
                 {!puedeResponder(pedido) && (

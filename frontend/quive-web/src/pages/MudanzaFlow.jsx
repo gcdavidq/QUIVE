@@ -31,19 +31,31 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
   const yaCargado = useRef(false);
 
   useEffect(() => {
-    const inicializar = async () => {
-      if (!userData?.id_usuario || yaCargado.current || userData?.formularioMudanza?.id_solicitud) {
-        // Si ya está cargado o no es necesario cargar, inicializa formData y currentStep
-        setFormData(prev => ({ ...prev, ...(userData?.formularioMudanza || {}) }));
+  const inicializar = async () => {
+    // Si no hay usuario, no hacer nada
+    if (!userData?.id_usuario) {
+      setCargando(false);
+      return;
+    }
+
+    // Si ya se cargó antes O ya hay una solicitud, usar datos existentes
+    if (yaCargado.current || userData?.formularioMudanza?.id_solicitud) {
+      setFormData(prev => ({ ...prev, ...(userData?.formularioMudanza || {}) }));
+      if (!yaCargado.current) {
         calcularStep(userData?.formularioMudanza);
-        setCargando(false);
-        return;
+        yaCargado.current = true; // Marcar como cargado
       }
+      setCargando(false);
+      return;
+    }
 
-      try {
-        const response = await fetch(`http://127.0.0.1:5000/solicitudes/mi_solicitud/${userData?.id_usuario}`);
+    // Primera vez cargando - intentar obtener solicitud del servidor
+    try {
+      const response = await fetch(`http://127.0.0.1:5000/solicitudes/mi_solicitud/${userData?.id_usuario}`);
+      
+      if (response.ok) {
         const data = await response.json();
-
+        
         const nuevaData = {
           id_solicitud: data.id_solicitud,
           origen: data.origen || '',
@@ -86,16 +98,25 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
 
         setFormData(prev => ({ ...prev, ...nuevaData }));
         calcularStep(nuevaData);
-        yaCargado.current = true;
-      } catch (error) {
-        console.error("Error cargando solicitud:", error);
-      } finally {
-        setCargando(false);
+      } else {
+        // No hay solicitud pendiente - empezar desde el paso 1
+        console.log("No hay solicitud pendiente, empezando desde paso 1");
+        setCurrentStep(1);
       }
-    };
+      
+      yaCargado.current = true;
+    } catch (error) {
+      console.error("Error cargando solicitud:", error);
+      // En caso de error, empezar desde el paso 1
+      setCurrentStep(1);
+      yaCargado.current = true;
+    } finally {
+      setCargando(false);
+    }
+  };
 
-    inicializar();
-  }, [userData?.id_usuario]);
+  inicializar();
+}, [userData?.id_usuario, userData?.formularioMudanza, setUserData]);
 
   const calcularStep = (form) => {
     if (!form) return setCurrentStep(1);
@@ -105,8 +126,6 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
       setCurrentStep(4);
     } else if (form?.asignacion?.estado === 'cancelada' || form?.asignacion?.estado === 'rechazada') {
       setCurrentStep(3);
-    } else {
-      setCurrentStep(1);
     }
   };
 
@@ -125,7 +144,9 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
       return;
     }
     if (currentStep < 5) {
+      console.log("Avanzando al siguiente paso:", currentStep + 1);
       setCurrentStep(currentStep + 1);
+      return; 
     }
   };
 
@@ -268,6 +289,8 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
         {currentStep === 5 && (
           <MetodosPago
             formData={formData}
+            setFormData={setFormData}
+            setUserData={setUserData}
             actualizarFormData={actualizarFormData}
             volver={volver}
             handleCancelar={handleCancelar}

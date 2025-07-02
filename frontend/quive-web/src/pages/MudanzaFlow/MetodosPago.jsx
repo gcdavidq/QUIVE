@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import PaymentMethodSelector from '../utils/PaymentMethodSelector';
 
-const MetodosPago = ({ formData, actualizarFormData, volver, handleCancelar }) => {
+const MetodosPago = ({ formData, setFormData, setUserData, actualizarFormData, volver, handleCancelar }) => {
   const navigate = useNavigate();
   const [mensaje, setMensaje] = useState('');
   const [metodosSeleccionados, setMetodosSeleccionados] = useState({});
@@ -55,20 +55,8 @@ const MetodosPago = ({ formData, actualizarFormData, volver, handleCancelar }) =
     }
 
     try {
-      // Actualizar el estado de la solicitud a 'confirmado'
-      const solicitudActualizada = {
-        ...formData,
-        estado: 'confirmada'
-      };
       // Obtener los datos del método seleccionado
       const metodoSeleccionado = metodosSeleccionados[metodoActivo];
-      console.log("Solicitud actualizada:", JSON.stringify({
-          id_asignacion: formData?.asignacion?.id_asignacion,
-          metodo_pago: metodoSeleccionado?.id,
-          monto: formData.conductor?.precio,
-          estado: 'confirmada',
-          tipo_metodo: metodoActivo
-        }));
       const response = await fetch(`http://127.0.0.1:5000/solicitudes/actualizar_estado/${formData?.id_solicitud}`, {
         method: 'PUT',
         headers: {
@@ -86,14 +74,13 @@ const MetodosPago = ({ formData, actualizarFormData, volver, handleCancelar }) =
       if (!response.ok) throw new Error("Error al confirmar la solicitud");
 
       // Actualizar el formData con el nuevo estado
-      actualizarFormData(solicitudActualizada);
-      
+      setUserData((prev) => ({
+        ...prev,
+        formularioMudanza: {},
+      }));
       setMensaje("Servicio confirmado correctamente.");
       
-      // Redirigir al inicio después de 2 segundos
-      setTimeout(() => {
-        volver();
-      }, 2000);
+      volver();
 
     } catch (err) {
       alert(err.message);

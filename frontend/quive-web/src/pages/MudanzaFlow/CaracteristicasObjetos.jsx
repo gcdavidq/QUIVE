@@ -199,6 +199,7 @@ const CaracteristicasObjetos = ({
       console.log("Objetos enviados:", response.data);
       actualzarFormData({ objetos: formData.objetos });
       nextStep();
+      return; 
     } catch (error) {
       console.error("Error al enviar los objetos:", error);
       

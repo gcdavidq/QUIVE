@@ -4,8 +4,7 @@ from api.metodosPago.services import (
     registrar_metodo_pago_usuario,
     listar_metodos_pago_usuario,
     actualizar_metodo_pago_usuario,
-    eliminar_metodo_pago_usuario,
-    realizar_pago_con_metodo
+    eliminar_metodo_pago_usuario
 )
 from api.metodosPago.schemas import MetodoPagoSchema, ActualizarMetodoSchema, PagoSchema
 from marshmallow import ValidationError
@@ -40,21 +39,4 @@ def actualizar_metodo(id_metodo):
 @metodos_pago_bp.route("/eliminar/<int:id_metodo>", methods=["DELETE"])
 def eliminar_metodo(id_metodo):
     msg = eliminar_metodo_pago_usuario(id_metodo)
-    return jsonify({"msg": msg}), 200
-
-@metodos_pago_bp.route("/pagar", methods=["POST"])
-def pagar():
-    try:
-        payload = PagoSchema().load(request.get_json())
-    except ValidationError as err:
-        return jsonify({"errors": err.messages}), 400
-
-    msg = realizar_pago_con_metodo(
-        payload["usuario_id_origen"],
-        payload["tipo_metodo"],
-        payload["id_metodo_externo"],
-        payload["destino_tipo"],
-        payload["destino_id"],
-        payload["monto"]
-    )
     return jsonify({"msg": msg}), 200

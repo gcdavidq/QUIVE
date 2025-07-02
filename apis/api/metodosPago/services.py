@@ -1,9 +1,7 @@
 from db import get_db
 from utils.verficar_metodo import (
     obtener_id_metodo_pago,
-    transferir_fondos,
     obtener_detalle_metodo_externo)
-
 
 def listar_metodos_pago_usuario(usuario_id):
     conn = get_db()
@@ -70,15 +68,3 @@ def eliminar_metodo_pago_usuario(id_metodo_usuario):
     if cursor.rowcount == 0:
         return "No se encontró el método a eliminar"
     return "Método de pago eliminado correctamente"
-
-def realizar_pago_con_metodo(origen_usuario_id, tipo_metodo, id_metodo_externo, destino_tipo, destino_id, monto):
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT * FROM Metodos_Pago_Usuario
-        WHERE usuario_id = %s AND tipo_metodo = %s AND id_metodo_externo = %s
-    """, (origen_usuario_id, tipo_metodo, id_metodo_externo))
-    if not cursor.fetchone():
-        return "Este método no pertenece al usuario o no está registrado"
-
-    return transferir_fondos(tipo_metodo, id_metodo_externo, destino_tipo, destino_id, monto)
