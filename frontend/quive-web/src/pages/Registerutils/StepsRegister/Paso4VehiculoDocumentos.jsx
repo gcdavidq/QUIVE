@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import SubidaDocumentos from '../documentos';
+import API_URL from '../../../api'; 
 
 const Paso4VehiculoDocumentos = ({ formData, setFormData, documentos, setDocumentos, setCurrentStep }) => {
   const [tiposVehiculo, setTiposVehiculo] = useState([]);
   const [placaExistente, setPlacaExistente] = useState(false);
 
   useEffect(() => {
-    fetch('http://127.0.0.1:5000/vehiculos/tipos-vehiculo')
+    fetch(`${API_URL}/vehiculos/tipos-vehiculo`)
       .then(res => res.json())
       .then(data => setTiposVehiculo(data))
       .catch(err => console.error('Error al obtener tipos de vehículo:', err));
@@ -18,7 +19,7 @@ const Paso4VehiculoDocumentos = ({ formData, setFormData, documentos, setDocumen
       if (!formData.placa || formData.placa.length < 7) return;
 
       try {
-        const res = await fetch('http://127.0.0.1:5000/vehiculos/verificar-placa', {
+        const res = await fetch(`${API_URL}/vehiculos/verificar-placa`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ placa: formData.placa })
@@ -67,7 +68,7 @@ const Paso4VehiculoDocumentos = ({ formData, setFormData, documentos, setDocumen
             value={formData.placa}
             onChange={handlePlaca}
             maxLength={7}
-            className="w-full px-4 py-3 border rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border rounded-lg theme-border theme-bg-primary theme-text-primary focus:ring-2 focus:ring-blue-500 transition-colors"
           />
           {placaExistente && (
             <p className="text-red-600 text-sm mt-1">Esta placa ya está registrada.</p>
@@ -79,11 +80,13 @@ const Paso4VehiculoDocumentos = ({ formData, setFormData, documentos, setDocumen
             name="tipoVehiculo"
             value={formData.tipoVehiculo}
             onChange={handleInputChange}
-            className="w-full px-4 py-3 border rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border rounded-lg theme-border theme-bg-primary theme-text-primary focus:ring-2 focus:ring-blue-500 transition-colors"
           >
             <option value="">Selecciona un tipo de vehículo</option>
             {tiposVehiculo.map(tipo => (
-              <option key={tipo.id_tipo_vehiculo} value={tipo.id_tipo_vehiculo}>{tipo.nombre}</option>
+              <option key={tipo.id_tipo_vehiculo} value={tipo.id_tipo_vehiculo}>
+                {tipo.nombre}
+              </option>
             ))}
           </select>
         </div>
@@ -95,7 +98,7 @@ const Paso4VehiculoDocumentos = ({ formData, setFormData, documentos, setDocumen
         <button
           type="button"
           onClick={() => setCurrentStep(3)}
-          className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-semibold"
+          className="px-6 py-3 theme-bg-secondary theme-text-primary rounded-lg hover:opacity-80 font-semibold transition-opacity"
         >
           Volver
         </button>
@@ -104,7 +107,9 @@ const Paso4VehiculoDocumentos = ({ formData, setFormData, documentos, setDocumen
           type="button"
           onClick={() => setCurrentStep(5)}
           disabled={!validarPaso()}
-          className={`px-6 py-3 rounded-lg font-semibold text-white ${validarPaso() ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'}`}
+          className={`px-6 py-3 rounded-lg font-semibold text-white transition-colors ${
+            validarPaso() ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
+          }`}
         >
           Siguiente
         </button>

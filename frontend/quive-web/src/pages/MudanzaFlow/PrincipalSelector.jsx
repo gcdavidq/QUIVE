@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import ListaConductores from './ListaConductores';
 import WaitingScreen from './WaitingScreen';
+import API_URL from '../../api'; 
 
 const PrincipalSelector = ({ formData, seleccionarConductor, nextStep, actualizarFormData, prevStep, userData, handleCancelar }) => {
   const asignacionEnviada = useRef(false);
@@ -17,7 +18,7 @@ const PrincipalSelector = ({ formData, seleccionarConductor, nextStep, actualiza
         precio: formData.conductor.precio,
       };
 
-      const response = await fetch("http://127.0.0.1:5000/asignaciones", {
+      const response = await fetch(`${API_URL}/asignaciones`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

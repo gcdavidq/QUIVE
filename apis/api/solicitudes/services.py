@@ -12,7 +12,7 @@ def get_solicitud_by_user_id(user_id: int):
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("CALL ObtenerSolicitudesPendientesConDetalle(%s)", (user_id,))
+    cursor.execute("CALL ObtenerSolicitudesConDetalle(%s, 'en espera', Null)", (user_id,))
     fila = cursor.fetchone()
 
     if fila:
@@ -74,7 +74,9 @@ def create_solicitud(data: dict):
                 id_sol,
                 t["id_usuario"],
                 distancias["distancia_trans_origen_km"],
-                distancias["distancia_trans_destino_km"]
+                distancias["distancia_trans_destino_km"],
+                json.dumps(distancias["ruta_origen"]),
+                json.dumps(distancias["ruta_destino"])
             ))
         except Exception as e:
             print(f"Error en transportista {t['id_usuario']}: {e}")
@@ -87,8 +89,10 @@ def create_solicitud(data: dict):
                 id_solicitud,
                 id_transportista,
                 distancia_origen, 
-                distancia_destino
-            ) VALUES (%s, %s, %s, %s)
+                distancia_destino,
+                ruta_destino,
+                ruta_origen
+            ) VALUES (%s, %s, %s, %s, %s, %s)
         """
         cursor.executemany(sql_distancia, valores)
 
@@ -143,7 +147,9 @@ def actualizar_solicitud_completa(id_solicitud, data):
                 id_solicitud,
                 t["id_usuario"],
                 distancias["distancia_trans_origen_km"],
-                distancias["distancia_trans_destino_km"]
+                distancias["distancia_trans_destino_km"],
+                json.dumps(distancias["ruta_origen"]),
+                json.dumps(distancias["ruta_destino"])
             ))
         except Exception as e:
             print(f"Error en transportista {t['id_usuario']}: {e}")
@@ -156,8 +162,10 @@ def actualizar_solicitud_completa(id_solicitud, data):
                 id_solicitud,
                 id_transportista,
                 distancia_origen, 
-                distancia_destino
-            ) VALUES (%s, %s, %s, %s)
+                distancia_destino,
+                ruta_origen,
+                ruta_destino
+            ) VALUES (%s, %s, %s, %s, %s, %s)
         """
         cursor.executemany(sql_distancia, valores)
 

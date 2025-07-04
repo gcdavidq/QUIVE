@@ -7,6 +7,7 @@ import SeleccionConductor from './MudanzaFlow/SeleccionConductor';
 import PrincipalSelector from './MudanzaFlow/PrincipalSelector';
 import MetodosPago from './MudanzaFlow/MetodosPago';
 import { ArrowLeft } from 'lucide-react';
+import API_URL from '../api'; // Asegúrate de que la ruta sea correcta
 
 const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
   const [formData, setFormData] = useState({
@@ -51,7 +52,7 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
 
     // Primera vez cargando - intentar obtener solicitud del servidor
     try {
-      const response = await fetch(`http://127.0.0.1:5000/solicitudes/mi_solicitud/${userData?.id_usuario}`);
+      const response = await fetch(`${API_URL}/solicitudes/mi_solicitud/${userData?.id_usuario}`);
       
       if (response.ok) {
         const data = await response.json();
@@ -126,6 +127,12 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
       setCurrentStep(4);
     } else if (form?.asignacion?.estado === 'cancelada' || form?.asignacion?.estado === 'rechazada') {
       setCurrentStep(3);
+    } else if (form?.objetos?.length > 0) { 
+      setCurrentStep(3);
+    } else if (form?.origen && form?.destino && form?.fecha && form?.hora) {  
+      setCurrentStep(2);
+    } else {    
+      setCurrentStep(1);
     }
   };
 
@@ -172,7 +179,7 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
     setNuevoObjeto({});
   };
 
-  const eliminarObjeto = id => setFormData({ ...formData, objetos: formData.objetos.filter(obj => obj.id !== id) });
+  const eliminarObjeto = id => actualizarFormData({ objetos: formData.objetos.filter(obj => obj.id !== id) });
 
   const seleccionarConductor = conductor => actualizarFormData({ conductor: conductor });
 
@@ -195,7 +202,7 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
     console.log("Eliminando asignación:", id_asignacion);
     try {
       const response = await fetch(
-        `http://127.0.0.1:5000/asignaciones/${id_asignacion}`,
+        `${API_URL}/asignaciones/${id_asignacion}`,
         {
           method: "DELETE",
           headers: {
@@ -227,25 +234,27 @@ const MudanzaFlow = ({ userData, setUserData, onNavigate, setActiveTab }) => {
     prevStep();
   };
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* HEADER FIJO */}
-      <div className="px-6 pt-6 pb-4 bg-white shadow-sm z-10">
-        <div className="mb-6 text-center">
-          <h2 className="text-xl font-bold text-blue-600">SOLICITANDO MUDANZA</h2>
-          <div className="mt-2 flex justify-between items-center">
-            <button
-              onClick={volver}
-              className="mr-4 p-2 text-gray-600 hover:text-blue-600 transition-colors"
-            >
-              <ArrowLeft size={24} />
-            </button>
-            <StepIndicator currentStep={currentStep} />
-            <div className="w-[80px] invisible">← Regresar</div>
-          </div>
+    <div className="min-h-screen flex flex-col theme-bg-secondary">
+    {/* HEADER FIJO */}
+    <div className="px-6 pt-6 pb-4 theme-bg-primary shadow-sm z-10">
+      <div className="mb-6 text-center">
+        <h2 className="text-xl font-bold text-blue-600">SOLICITANDO MUDANZA</h2>
+        <div className="mt-2 flex justify-between items-center">
+          <button
+            onClick={volver}
+            className="mr-4 p-2 theme-text-secondary hover:text-blue-600 transition-colors"
+          >
+            <ArrowLeft size={24} />
+          </button>
+          <StepIndicator currentStep={currentStep} />
+          {/* Espacio reservado */}
+          <div className="w-[80px] invisible">← Regresar</div>
         </div>
       </div>
+    </div>
 
-      <div className="flex-1 px-6 pb-20 overflow-auto">
+    {/* CONTENIDO PRINCIPAL */}
+    <div className="flex-1 px-6 pb-20 overflow-auto theme-text-primary">
         {currentStep === 1 && (
           <DetallesMudanza
             userData={userData}

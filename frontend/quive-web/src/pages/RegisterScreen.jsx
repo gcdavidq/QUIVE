@@ -52,16 +52,22 @@ const RegisterScreen = ({ onNavigate, setUserData }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <header className="bg-white shadow-sm p-6 flex items-center justify-between">
+    <div className="min-h-screen bg-gradient-landing">
+      <header className="theme-card shadow-sm p-6 flex items-center justify-between">
         <div className="flex items-center">
-          <button onClick={() => onNavigate('landing')} className="mr-4 p-2 text-gray-600 hover:text-blue-600 transition-colors">
+          <button 
+            onClick={() => onNavigate('landing')} 
+            className="mr-4 p-2 theme-text-secondary hover:text-blue-600 transition-colors"
+          >
             <ArrowLeft size={24} />
           </button>
           <div className="text-2xl font-bold text-blue-600">QUIVE</div>
         </div>
         {currentStep > 1 && (
-          <button onClick={volverPaso} className="text-sm px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">
+          <button 
+            onClick={volverPaso} 
+            className="text-sm px-4 py-2 theme-bg-secondary theme-text-primary rounded-md hover:opacity-80 transition-opacity"
+          >
             Volver
           </button>
         )}
@@ -70,14 +76,20 @@ const RegisterScreen = ({ onNavigate, setUserData }) => {
       <div className="flex justify-center py-4">
         {steps.map((step, index) => (
           <div key={step} className="flex items-center">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${currentStep === step ? 'bg-blue-600' : 'bg-gray-300'}`}>{step}</div>
-            {index < steps.length - 1 && <div className="w-12 h-1 bg-gray-300 mx-2"></div>}
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
+              currentStep === step ? 'bg-blue-600' : 'bg-gray-300'
+            }`}>
+              {step}
+            </div>
+            {index < steps.length - 1 && (
+              <div className="w-12 h-1 bg-gray-300 mx-2"></div>
+            )}
           </div>
         ))}
       </div>
 
       <div className="flex items-center justify-center min-h-[60vh] py-4">
-        <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-xl">
+        <div className="theme-card rounded-2xl shadow-xl p-6 w-full max-w-xl">
           {renderStep()}
         </div>
       </div>

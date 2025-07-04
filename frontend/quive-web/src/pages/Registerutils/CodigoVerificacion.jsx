@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import API_URL from '../../api'; // Asegúrate de que esta ruta sea correcta
 
 const CodigoVerificacion = ({ email, codigoGenerado, onVerificado, onReintentar }) => {
   const [inputs, setInputs] = useState(["", "", "", "", "", ""]);
@@ -14,7 +15,7 @@ const CodigoVerificacion = ({ email, codigoGenerado, onVerificado, onReintentar 
 
     const enviarCodigoPorCorreo = async () => {
       try {
-        const response = await fetch("http://127.0.0.1:5000/auth/enviar-codigo", {
+        const response = await fetch(`${API_URL}/auth/enviar-codigo`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, codigo: codigoGenerado })
@@ -86,12 +87,14 @@ const CodigoVerificacion = ({ email, codigoGenerado, onVerificado, onReintentar 
 
   return (
     <div className="flex items-center justify-center min-h-[60vh] py-4">
-      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-xl text-center space-y-6">
+      <div className="theme-card rounded-2xl shadow-xl p-6 w-full max-w-xl text-center space-y-6">
         <h2 className="text-xl font-bold text-blue-600">Verificación de Correo</h2>
-        <p className="text-sm text-gray-600">Se ha enviado un código de verificación a <strong>{email}</strong></p>
+        <p className="text-sm theme-text-secondary">
+          Se ha enviado un código de verificación a <strong className="theme-text-primary">{email}</strong>
+        </p>
 
         {loading ? (
-          <p className="text-gray-500">Enviando código...</p>
+          <p className="theme-text-secondary">Enviando código...</p>
         ) : (
           <>
             {enviado && (
@@ -107,7 +110,7 @@ const CodigoVerificacion = ({ email, codigoGenerado, onVerificado, onReintentar 
                     onChange={(e) => handleInputChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     onPaste={handlePaste}
-                    className="w-12 h-12 text-center text-xl border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="verification-input w-12 h-12 text-center text-xl theme-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 theme-bg-primary theme-text-primary"
                   />
                 ))}
               </div>
@@ -118,16 +121,18 @@ const CodigoVerificacion = ({ email, codigoGenerado, onVerificado, onReintentar 
             {enviado && (
               <button
                 onClick={verificarCodigo}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold"
+                className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold transition-colors duration-200"
               >
                 Verificar y continuar
               </button>
             )}
 
-            <p className="text-sm text-gray-500">Si no encuentras el correo, revisa la carpeta de spam.</p>
+            <p className="text-sm theme-text-secondary">
+              Si no encuentras el correo, revisa la carpeta de spam.
+            </p>
             <button
               onClick={onReintentar}
-              className="text-sm text-blue-500 hover:underline"
+              className="text-sm text-blue-500 hover:underline hover:text-blue-600 transition-colors duration-200"
             >
               Volver al formulario
             </button>

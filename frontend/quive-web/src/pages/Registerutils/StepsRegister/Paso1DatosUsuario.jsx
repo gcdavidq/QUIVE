@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { generateCode, sendEmailFake } from '../verificationUtils';
+import API_URL from '../../../api';
 
 const Paso1DatosUsuario = ({ formData, setFormData, setCurrentStep, setCodigoVerificacion }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -32,7 +33,7 @@ const Paso1DatosUsuario = ({ formData, setFormData, setCurrentStep, setCodigoVer
   const verificarYContinuar = async () => {
     if (!validateStep()) return;
     try {
-      const res = await fetch("http://127.0.0.1:5000/auth/verificar-usuario", {
+      const res = await fetch(`${API_URL}/auth/verificar-usuario`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: formData.email, telefono: formData.telefono, dni: formData.dni })
@@ -51,7 +52,7 @@ const Paso1DatosUsuario = ({ formData, setFormData, setCurrentStep, setCodigoVer
 
   return (
     <form className="space-y-4">
-      <div className="flex bg-blue-50 rounded-full p-1 mb-4">
+      <div className="flex theme-bg-secondary rounded-full p-1 mb-4">
         <button
           type="button"
           onClick={() => setFormData(prev => ({ ...prev, tipoUsuario: 'cliente' }))}
@@ -71,14 +72,18 @@ const Paso1DatosUsuario = ({ formData, setFormData, setCurrentStep, setCodigoVer
           Transportista
         </button>
       </div>
+      
       <h2 className="text-xl font-bold text-blue-600">Datos del Usuario</h2>
+      
       <input
         type="text"
         name="nombre"
         placeholder="Nombre completo"
         value={formData.nombre}
         onChange={handleInputChange}
-        className={`w-full px-4 py-3 border rounded-lg ${errors.nombre ? 'border-red-500' : 'border-gray-300'}`}
+        className={`w-full px-4 py-3 border rounded-lg theme-bg-primary theme-text-primary transition-colors ${
+          errors.nombre ? 'border-red-500' : 'theme-border'
+        }`}
       />
       {errors.nombre && <p className="text-red-500 text-sm">{errors.nombre}</p>}
 
@@ -90,7 +95,9 @@ const Paso1DatosUsuario = ({ formData, setFormData, setCurrentStep, setCodigoVer
             placeholder="Correo Electrónico"
             value={formData.email}
             onChange={handleInputChange}
-            className={`w-full px-4 py-3 border rounded-lg ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
+            className={`w-full px-4 py-3 border rounded-lg theme-bg-primary theme-text-primary transition-colors ${
+              errors.email ? 'border-red-500' : 'theme-border'
+            }`}
           />
           {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
         </div>
@@ -104,7 +111,9 @@ const Paso1DatosUsuario = ({ formData, setFormData, setCurrentStep, setCodigoVer
             onChange={(e) => {
               if (/^\d{0,9}$/.test(e.target.value)) handleInputChange(e);
             }}
-            className={`w-full px-4 py-3 border rounded-lg ${errors.telefono ? 'border-red-500' : 'border-gray-300'}`}
+            className={`w-full px-4 py-3 border rounded-lg theme-bg-primary theme-text-primary transition-colors ${
+              errors.telefono ? 'border-red-500' : 'theme-border'
+            }`}
           />
           {errors.telefono && <p className="text-red-500 text-sm">{errors.telefono}</p>}
         </div>
@@ -117,7 +126,9 @@ const Paso1DatosUsuario = ({ formData, setFormData, setCurrentStep, setCodigoVer
         value={formData.dni}
         maxLength={8}
         onChange={(e) => { if (/^\d*$/.test(e.target.value)) handleInputChange(e); }}
-        className={`w-full px-4 py-3 border rounded-lg ${errors.dni ? 'border-red-500' : 'border-gray-300'}`}
+        className={`w-full px-4 py-3 border rounded-lg theme-bg-primary theme-text-primary transition-colors ${
+          errors.dni ? 'border-red-500' : 'theme-border'
+        }`}
       />
       {errors.dni && <p className="text-red-500 text-sm">{errors.dni}</p>}
 
@@ -128,9 +139,15 @@ const Paso1DatosUsuario = ({ formData, setFormData, setCurrentStep, setCodigoVer
           placeholder="Contraseña"
           value={formData.password}
           onChange={handleInputChange}
-          className={`w-full px-4 py-3 border rounded-lg ${errors.password ? 'border-red-500' : 'border-gray-300'}`}
+          className={`w-full px-4 py-3 border rounded-lg theme-bg-primary theme-text-primary transition-colors ${
+            errors.password ? 'border-red-500' : 'theme-border'
+          }`}
         />
-        <button type="button" onClick={() => setShowPassword(prev => !prev)} className="absolute right-3 top-3">
+        <button 
+          type="button" 
+          onClick={() => setShowPassword(prev => !prev)} 
+          className="absolute right-3 top-3 theme-text-secondary hover:theme-text-primary transition-colors"
+        >
           {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
         </button>
         {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
@@ -143,16 +160,26 @@ const Paso1DatosUsuario = ({ formData, setFormData, setCurrentStep, setCodigoVer
           placeholder="Confirmar Contraseña"
           value={formData.confirmPassword}
           onChange={handleInputChange}
-          className={`w-full px-4 py-3 border rounded-lg ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'}`}
+          className={`w-full px-4 py-3 border rounded-lg theme-bg-primary theme-text-primary transition-colors ${
+            errors.confirmPassword ? 'border-red-500' : 'theme-border'
+          }`}
         />
-        <button type="button" onClick={() => setShowConfirmPassword(prev => !prev)} className="absolute right-3 top-3">
+        <button 
+          type="button" 
+          onClick={() => setShowConfirmPassword(prev => !prev)} 
+          className="absolute right-3 top-3 theme-text-secondary hover:theme-text-primary transition-colors"
+        >
           {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
         </button>
         {errors.confirmPassword && <p className="text-red-500 text-sm">{errors.confirmPassword}</p>}
       </div>
 
       <div className="flex justify-center pt-4">
-        <button type="button" onClick={verificarYContinuar} className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold">
+        <button 
+          type="button" 
+          onClick={verificarYContinuar} 
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-colors"
+        >
           Siguiente
         </button>
       </div>

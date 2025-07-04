@@ -13,38 +13,44 @@ const PerfilTab = ({ userData, onNavigate, setUserData}) => {
   const navigate = useNavigate();
 
   return (
-    <div>
+    <div className="theme-bg-primary min-h-screen px-4 py-6">
       <Routes>
         <Route
           path="/"
           element={
             <>
-              <h2 className="text-2xl font-bold text-blue-600 mb-6">Mi Perfil</h2>
+              <h2 className="text-2xl font-bold theme-text-primary mb-6">Mi Perfil</h2>
 
               <div className="space-y-6">
                 {/* Profile Info */}
-                <div className="bg-white rounded-lg p-6 shadow-sm">
+                <div className="theme-card p-6 rounded-lg shadow-sm">
                   <div className="flex items-center space-x-4 mb-6">
                     <div className="w-16 h-16 rounded-full overflow-hidden border-2 shadow-md">
-                      <SubirImagen defaultPreview={userData.foto_perfil_url} editable={false} imgClassName={"w-16 h-16 rounded-full overflow-hidden border-2 shadow-md"}/>
+                      <SubirImagen
+                        defaultPreview={userData.foto_perfil_url}
+                        editable={false}
+                        imgClassName="w-16 h-16 rounded-full overflow-hidden border-2 shadow-md"
+                      />
                     </div>
                     <div>
-                      <h3 className="text-xl font-semibold text-gray-800">{userData.nombre_completo || 'Usuario'}</h3>
-                      <p className="text-gray-600">{userData.email || 'email@ejemplo.com'}</p>
+                      <h3 className="text-xl font-semibold theme-text-primary">
+                        {userData.nombre_completo || 'Usuario'}
+                      </h3>
+                      <p className="theme-text-secondary">{userData.email || 'email@ejemplo.com'}</p>
                     </div>
                   </div>
 
                   <button
                     onClick={() => navigate('editar')}
-                    className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                    className="w-full btn-primary py-3 rounded-lg"
                   >
                     Editar Perfil
                   </button>
                 </div>
 
                 {/* Menu Options */}
-                <div className="bg-white rounded-lg shadow-sm">
-                  <div className="divide-y divide-gray-100">
+                <div className="theme-card rounded-lg shadow-sm">
+                  <div className="divide-y theme-border">
                     {[
                       { label: "Mis Direcciones", route: "direcciones" },
                       { label: "Métodos de Pago", route: "pagos" },
@@ -55,47 +61,42 @@ const PerfilTab = ({ userData, onNavigate, setUserData}) => {
                       <button
                         key={route}
                         onClick={() => navigate(route)}
-                        className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+                        className="w-full flex items-center justify-between p-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                       >
-                        <span className="text-gray-700">{label}</span>
-                        <span className="text-gray-400">›</span>
+                        <span className="theme-text-primary">{label}</span>
+                        <span className="theme-text-secondary">›</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
                 {/* Logout */}
-                  <button
-                    onClick={() => {
-                      // Limpiar localStorage
-                      localStorage.removeItem('userData');
-
-                      // Limpiar el estado
-                      setUserData({});
-                      
-                      // Navegar a la pantalla de inicio
-                      onNavigate('landing');
-                    }}
-                    className="w-full p-4 text-red-600 hover:bg-red-50 transition-colors rounded-lg"
-                  >
-                    Cerrar Sesión
-                  </button>
+                <button
+                  onClick={() => {
+                    localStorage.removeItem('userData');
+                    setUserData({});
+                    onNavigate('landing');
+                  }}
+                  className="w-full p-4 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors rounded-lg"
+                >
+                  Cerrar Sesión
+                </button>
               </div>
             </>
           }
         />
 
-        <Route path="editar" element={<EditarPerfilTab userData={userData} setUserData={setUserData}/>} />
+        <Route path="editar" element={<EditarPerfilTab userData={userData} setUserData={setUserData} />} />
         <Route path="direcciones" element={<MisDirecciones />} />
-        <Route path="pagos" element={<MetodosPago userData={userData}/>} />
+        <Route path="pagos" element={<MetodosPago userData={userData} />} />
         <Route path="historial" element={<HistorialMudanzas />} />
         <Route path="configuracion" element={<Configuracion />} />
         <Route path="soporte" element={<AyudaSoporte />} />
       </Routes>
 
-      {/* Mostrar subcomponentes si hay alguna ruta anidada */}
       <Outlet />
     </div>
+
   );
 };
 

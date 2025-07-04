@@ -21,58 +21,58 @@ const Paso5Tarifas = ({ tarifas, setTarifas, setCurrentStep }) => {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="text-sm text-gray-600">Precio por m³ (S/)</label>
+          <label className="text-sm theme-text-secondary block mb-2">Precio por m³ (S/)</label>
           <input
             type="text"
             name="precio_por_m3"
             placeholder='ejemplo: 1.50'
             value={tarifas.precio_por_m3}
             onChange={handleInputChange}
-            className="w-full px-4 py-3 border rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border rounded-lg theme-border theme-bg-primary theme-text-primary focus:ring-2 focus:ring-blue-500 transition-colors"
           />
         </div>
         <div>
-          <label className="text-sm text-gray-600">Precio por kg (S/)</label>
+          <label className="text-sm theme-text-secondary block mb-2">Precio por kg (S/)</label>
           <input
             type="text"
             name="precio_por_kg"
             placeholder='ejemplo: 0.40'
             value={tarifas.precio_por_kg}
             onChange={handleInputChange}
-            className="w-full px-4 py-3 border rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border rounded-lg theme-border theme-bg-primary theme-text-primary focus:ring-2 focus:ring-blue-500 transition-colors"
           />
         </div>
         <div>
-          <label className="text-sm text-gray-600">Precio por km (S/)</label>
+          <label className="text-sm theme-text-secondary block mb-2">Precio por km (S/)</label>
           <input
             type="text"
             name="precio_por_km"
             placeholder='ejemplo: 2.50'
             value={tarifas.precio_por_km}
             onChange={handleInputChange}
-            className="w-full px-4 py-3 border rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border rounded-lg theme-border theme-bg-primary theme-text-primary focus:ring-2 focus:ring-blue-500 transition-colors"
           />
         </div>
         <div>
-          <label className="text-sm text-gray-600">Recargo por embalaje (S/)</label>
+          <label className="text-sm theme-text-secondary block mb-2">Recargo por embalaje (S/)</label>
           <input
             type="text"
             name="recargo_embalaje"
             placeholder='ejemplo: 1.20'
             value={tarifas.recargo_embalaje}
             onChange={handleInputChange}
-            className="w-full px-4 py-3 border rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border rounded-lg theme-border theme-bg-primary theme-text-primary focus:ring-2 focus:ring-blue-500 transition-colors"
           />
         </div>
         <div>
-          <label className="text-sm text-gray-600">Recargo por objeto frágil (S/)</label>
+          <label className="text-sm theme-text-secondary block mb-2">Recargo por objeto frágil (S/)</label>
           <input
             type="text"
             name="recargo_fragil"
             placeholder='ejemplo: 0.80'
             value={tarifas.recargo_fragil}
             onChange={handleInputChange}
-            className="w-full px-4 py-3 border rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border rounded-lg theme-border theme-bg-primary theme-text-primary focus:ring-2 focus:ring-blue-500 transition-colors"
           />
         </div>
       </div>
@@ -81,7 +81,7 @@ const Paso5Tarifas = ({ tarifas, setTarifas, setCurrentStep }) => {
         <button
           type="button"
           onClick={() => setCurrentStep(4)}
-          className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-semibold"
+          className="px-6 py-3 theme-bg-secondary theme-text-primary rounded-lg hover:opacity-80 font-semibold transition-opacity"
         >
           Volver
         </button>
@@ -90,7 +90,9 @@ const Paso5Tarifas = ({ tarifas, setTarifas, setCurrentStep }) => {
           type="button"
           onClick={() => setCurrentStep(6)}
           disabled={!validarTarifas()}
-          className={`px-6 py-3 rounded-lg font-semibold text-white ${validarTarifas() ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'}`}
+          className={`px-6 py-3 rounded-lg font-semibold text-white transition-colors ${
+            validarTarifas() ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
+          }`}
         >
           Siguiente
         </button>

@@ -1,4 +1,5 @@
 import openrouteservice
+from openrouteservice import convert
 
 def extraer_coordenadas(texto):
     try:
@@ -18,24 +19,24 @@ def calcular_ruta_ors(origen_txt, destino_txt, ubicacion_transportista_txt):
     client = openrouteservice.Client(key="5b3ce3597851110001cf6248586c45473a8042fbbe48c152e2539778")
 
     resultados = {}
-
     try:
-        # Ruta desde transportista al origen
+        # Ruta transportista → origen
         ruta1 = client.directions(
             coordinates=[trans_coords, origen_coords],
             profile='driving-car',
             format='json'
         )
         resultados["distancia_trans_origen_km"] = ruta1['routes'][0]['summary']['distance'] / 1000
+        resultados["ruta_origen"] = convert.decode_polyline(ruta1['routes'][0]['geometry'])['coordinates']
 
-        # Ruta desde origen al destino
+        # Ruta origen → destino
         ruta2 = client.directions(
             coordinates=[trans_coords, destino_coords],
             profile='driving-car',
             format='json'
         )
         resultados["distancia_trans_destino_km"] = ruta2['routes'][0]['summary']['distance'] / 1000
-
+        resultados["ruta_destino"] = convert.decode_polyline(ruta2['routes'][0]['geometry'])['coordinates']
     except openrouteservice.exceptions.ApiError as e:
         raise RuntimeError("Error al consultar OpenRouteService") from e
 

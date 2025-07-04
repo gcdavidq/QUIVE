@@ -6,7 +6,7 @@ import AddressMap from "./AddressMap";
 import useUbicacionDesdeExcel from "./distrito";
 
 // SVG inline de pin (color rojo suave) para el botón
-const PinIcon = ({ size = 16, color = "#d9534f", style = {} }) => (
+const PinIcon = ({ size = 16, color = "#d9534f" }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -17,39 +17,11 @@ const PinIcon = ({ size = 16, color = "#d9534f", style = {} }) => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
-    style={style}
   >
     <path d="M12 21c0 0-7-4.35-7-11a7 7 0 0114 0c0 6.65-7 11-7 11z" />
     <circle cx="12" cy="10" r="2" />
   </svg>
 );
-
-// Estilos para el overlay (modal)
-const overlayStyles = {
-  modalBackdrop: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    zIndex: 50,
-    width: "100vw",
-    height: "100vh",
-    backgroundColor: "rgba(0,0,0,0.5)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    backgroundColor: "#fff",
-    padding: "1.5rem",
-    borderRadius: "12px",
-    width: "95%",
-    maxWidth: "750px",
-    maxHeight: "90vh",
-    overflowY: "auto",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
-    position: "relative",
-  },
-};
 
 const sinonimosTipoVia = {
   Avenida: ["Avenida", "Av.", "Av"],
@@ -62,7 +34,6 @@ function obtenerSinonimos(tipoVia) {
   return sinonimosTipoVia[tipoVia] || [tipoVia];
 }
 
-
 const UbicacionPeru = ({ direccion, setUbicacion }) => {
   const datosUbicacion = useUbicacionDesdeExcel() || {};
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
@@ -74,7 +45,6 @@ const UbicacionPeru = ({ direccion, setUbicacion }) => {
     return null;
   });
   const [haBuscado, setHaBuscado] = useState(false);
-
   const [esUbicacionValida, setEsUbicacionValida] = useState(null);
 
   const validarUbicacion = async ([lat, lon]) => {
@@ -106,9 +76,6 @@ const UbicacionPeru = ({ direccion, setUbicacion }) => {
     }
   };
 
-
-
-
   // Construye el string de búsqueda para Nominatim
   const construirQuery = ({ incluyeNumero, tipoViaAlternativo }) => {
     const partes = [];
@@ -128,7 +95,6 @@ const UbicacionPeru = ({ direccion, setUbicacion }) => {
 
     return partes.filter(Boolean).join(", ");
   };
-
 
   // Llamada a Nominatim en 3 pasos según lógica
   const buscarEnMapa = async () => {
@@ -171,7 +137,6 @@ const UbicacionPeru = ({ direccion, setUbicacion }) => {
     setResultados(filtrados);
   };
 
-
   // Cuando el usuario selecciona un marcador en el mapa…
   const onMarkerClick = (objeto) => {
     const address = objeto.address || {};
@@ -200,16 +165,15 @@ const UbicacionPeru = ({ direccion, setUbicacion }) => {
       tipoVia: tipoViaNuevo,
       nombreVia: nombreViaNuevo,
       numero: numeroEncontrado,
-      lat: parseFloat(lat)|| "",
-      lng: parseFloat(lon)|| "",
+      lat: parseFloat(lat) || "",
+      lng: parseFloat(lon) || "",
     });
 
     setPositionSeleccionada([parseFloat(lat), parseFloat(lon)]);
     validarUbicacion([parseFloat(lat), parseFloat(lon)]);
-
   };
 
-  // ✅ Nuevo: cuando el usuario hace clic libre en el mapa
+  // Cuando el usuario hace clic libre en el mapa
   const onManualSelect = async ([lat, lon]) => {
     const esValida = await validarUbicacion([lat, lon]);
     setEsUbicacionValida(esValida);
@@ -258,38 +222,38 @@ const UbicacionPeru = ({ direccion, setUbicacion }) => {
     }
   };
 
+  // Verificar si hay ubicación seleccionada
+  const tieneUbicacion = direccion.lat && direccion.lng && 
+    (direccion.tipoVia || direccion.nombreVia || direccion.distrito);
 
-  const resumenUbicacion = `${direccion.tipoVia} ${direccion.nombreVia} ${direccion.numero}, ${direccion.distrito}, ${direccion.provincia}, ${direccion.departamento}, Peru`
-
+  const resumenUbicacion = tieneUbicacion 
+    ? `${direccion.tipoVia} ${direccion.nombreVia} ${direccion.numero}, ${direccion.distrito}, ${direccion.provincia}, ${direccion.departamento}, Peru`
+    : "Seleccione su ubicación";
   return (
     <div>
       {/* Botón que abre el modal */}
       <button
         type="button"
         onClick={() => setMostrarFormulario(true)}
-        className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-white flex items-center justify-start text-sm text-gray-800"
+        className="ubicacion-button"
       >
-        <PinIcon />
-        <span className="ml-2">📍 {resumenUbicacion}</span>
+        <div className="ubicacion-button-content">
+          <div className="ubicacion-button-icon">
+            <PinIcon />
+          </div>
+          <span className="ubicacion-button-text">📍 {resumenUbicacion}</span>
+        </div>
       </button>
 
       {/* Modal superpuesto */}
       {mostrarFormulario && (
-        <div style={overlayStyles.modalBackdrop}>
-          <div style={overlayStyles.modalContent}>
+        <div className="ubicacion-modal-backdrop">
+          <div className="ubicacion-modal-content">
             {/* Botón de cerrar */}
             <button
-              style={{
-                position: "absolute",
-                top: "8px",
-                right: "12px",
-                fontSize: "20px",
-                cursor: "pointer",
-                background: "transparent",
-                border: "none",
-                color: "#555",
-              }}
+              className="ubicacion-modal-close"
               onClick={() => setMostrarFormulario(false)}
+              aria-label="Cerrar modal"
             >
               ✕
             </button>
@@ -311,8 +275,10 @@ const UbicacionPeru = ({ direccion, setUbicacion }) => {
               haBuscado={haBuscado}
               esUbicacionValida={esUbicacionValida}
             />
+            
+            {/* 3) Mostrar coordenadas seleccionadas */}
             {direccion.lat && direccion.lng && (
-              <div style={{ marginTop: "0.5rem", fontSize: "0.9rem", color: "#374151", textAlign: "left" }}>
+              <div className="ubicacion-coordenadas">
                 Coordenadas seleccionadas:<br />
                 <strong>Lat:</strong> {direccion.lat.toFixed(6)}&nbsp;&nbsp;
                 <strong>Lng:</strong> {direccion.lng.toFixed(6)}

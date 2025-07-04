@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   BrowserRouter as Router,
@@ -28,60 +29,62 @@ const AppRoutes = () => {
   }, [userData]);
 
   return (
-    <Routes>
-      <Route path="/" element={
-        <PublicRoute userData={userData}>
-          <LandingScreen onNavigate={navigate} />
-        </PublicRoute>
-      } 
-      />
-      <Route
-        path="/register"
-        element={
+    <>
+      <Routes>
+        <Route path="/" element={
           <PublicRoute userData={userData}>
-            <RegisterScreen
-              onNavigate={navigate}
-              setUserData={setUserData}
-            />
+            <LandingScreen onNavigate={navigate} />
           </PublicRoute>
-        }
-      />
-      <Route
-        path="/login"
-        element={<PublicRoute userData={userData}>
-          <LoginScreen 
-            onNavigate={navigate} 
-            setUserData={setUserData} />
-          </PublicRoute>
-          }
-      />
-      <Route
-        path="/registroExitoso"
-        element={<RegistroExitosoScreen onNavigate={navigate} />}
-      />
-      <Route
-        path="/dashboard/*"
-        element={
-          <PrivateRoute userData={userData}>
-            {
-              <DashboardScreen
-                  userData={userData}
-                  setUserData={setUserData}
-                  onNavigate={navigate}
+        } 
+        />
+        <Route
+          path="/register"
+          element={
+            <PublicRoute userData={userData}>
+              <RegisterScreen
+                onNavigate={navigate}
+                setUserData={setUserData}
               />
-            }
-          </PrivateRoute>
-        }
-      />
-      <Route path="*" element={<Navigate to="/" />} />
-    </Routes>
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            <PublicRoute userData={userData}>
+              <LoginScreen 
+                onNavigate={navigate} 
+                setUserData={setUserData} 
+              />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/registroExitoso"
+          element={<RegistroExitosoScreen onNavigate={navigate} />}
+        />
+        <Route
+          path="/dashboard/*"
+          element={
+            <PrivateRoute userData={userData}>
+              <DashboardScreen
+                userData={userData}
+                setUserData={setUserData}
+                onNavigate={navigate}
+              />
+            </PrivateRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </>
   );
 };
 
 const QuiveApp = () => {
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen theme-bg-primary theme-text-primary">
         <AppRoutes />
       </div>
     </Router>

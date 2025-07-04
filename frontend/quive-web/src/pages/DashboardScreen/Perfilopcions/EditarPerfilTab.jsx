@@ -4,6 +4,7 @@ import SubirImagen from '../../utils/SubirImagen';
 import UbicacionPeru from '../../Registerutils/address';
 import { useNavigate } from 'react-router-dom';
 import { parseUbicacion } from '../../utils/ubicacion';
+import API_URL from '../../../api';
 
 const EditarPerfilScreen = ({ userData, setUserData}) => {
   const navigate = useNavigate();
@@ -63,7 +64,7 @@ const EditarPerfilScreen = ({ userData, setUserData}) => {
     }
 
     try {
-      const response = await fetch("http://127.0.0.1:5000/auth/register", {
+      const response = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         credentials: "include",
         body: formPayload,
@@ -90,26 +91,26 @@ const EditarPerfilScreen = ({ userData, setUserData}) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <header className="bg-white shadow-sm p-6 flex items-center">
+    <div className="min-h-screen theme-bg-primary">
+      <header className="theme-card p-6 flex items-center shadow-sm">
         <button
           onClick={() => navigate('..')}
-          className="mr-4 p-2 text-gray-600 hover:text-blue-600 transition-colors"
+          className="mr-4 p-2 theme-text-secondary hover:text-blue-600 transition-colors"
         >
           <ArrowLeft size={24} />
         </button>
-        <div className="text-2xl font-bold text-blue-600">Editar Perfil</div>
+        <div className="text-2xl font-bold theme-title-primary">Editar Perfil</div>
       </header>
 
       <div className="flex items-center justify-center py-12">
-        <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+        <div className="theme-card rounded-2xl shadow-xl p-8 w-full max-w-md">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex justify-center mb-6">
               <SubirImagen
                 defaultPreview={preview}
                 onFotoSeleccionada={(file) => {
-                  setFotoPerfil(file); // para enviar al backend
-                  setPreview(URL.createObjectURL(file)); // para mostrar preview
+                  setFotoPerfil(file);
+                  setPreview(URL.createObjectURL(file));
                 }}
                 id_imagen="fotoPerfil"
                 imgClassName="w-32 h-32 rounded-full object-cover border-4 border-blue-200 shadow-md"
@@ -122,7 +123,7 @@ const EditarPerfilScreen = ({ userData, setUserData}) => {
               placeholder="Nombre y Apellidos"
               value={formData.nombre}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="form-input"
             />
 
             <input
@@ -131,7 +132,7 @@ const EditarPerfilScreen = ({ userData, setUserData}) => {
               placeholder="Correo Electrónico"
               value={formData.email}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="form-input"
             />
 
             <input
@@ -141,12 +142,10 @@ const EditarPerfilScreen = ({ userData, setUserData}) => {
               maxLength={9}
               value={formData.telefono}
               onChange={(e) => {
-                  const value = e.target.value;
-                  if (/^\d*$/.test(value)) {  // Solo permite números
-                    handleInputChange(e);
-                  }
-                }}
-              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                const value = e.target.value;
+                if (/^\d*$/.test(value)) handleInputChange(e);
+              }}
+              className="form-input"
             />
 
             <input
@@ -156,12 +155,10 @@ const EditarPerfilScreen = ({ userData, setUserData}) => {
               maxLength={8}
               value={formData.dni}
               onChange={(e) => {
-                  const value = e.target.value;
-                  if (/^\d*$/.test(value)) {  // Solo permite números
-                    handleInputChange(e);
-                  }
-                }}
-              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                const value = e.target.value;
+                if (/^\d*$/.test(value)) handleInputChange(e);
+              }}
+              className="form-input"
             />
 
             <UbicacionPeru direccion={direccion} setUbicacion={setUbicacion} />
@@ -173,12 +170,12 @@ const EditarPerfilScreen = ({ userData, setUserData}) => {
                 placeholder="Nueva Contraseña (opcional)"
                 value={formData.contrasena}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="form-input pr-10"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 theme-text-secondary"
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
@@ -186,7 +183,7 @@ const EditarPerfilScreen = ({ userData, setUserData}) => {
 
             <button
               type="submit"
-              className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+              className="btn-primary w-full py-3 rounded-lg font-semibold"
             >
               GUARDAR CAMBIOS
             </button>
@@ -195,6 +192,7 @@ const EditarPerfilScreen = ({ userData, setUserData}) => {
       </div>
     </div>
   );
+
 };
 
 export default EditarPerfilScreen;

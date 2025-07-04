@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
+import API_URL from "../api"; // Asegúrate de que la ruta sea correcta
 
 const LoginScreen = ({ onNavigate, setUserData }) => {
   const [formData, setFormData] = useState({ identificador: '', password: '' });
@@ -48,7 +49,7 @@ const LoginScreen = ({ onNavigate, setUserData }) => {
     setGeneralError('');
     
     try {
-      const res = await fetch('http://localhost:5000/auth/google', {
+      const res = await fetch(`${API_URL}/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: response.credential }),
@@ -66,7 +67,7 @@ const LoginScreen = ({ onNavigate, setUserData }) => {
     } catch (error) {
       console.error('Error de conexión con el servidor:', error);
       if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
-        setGeneralError('No se puede conectar con el servidor. Verifica que el servidor esté ejecutándose en localhost:5000 o tu conexión a internet.');
+        setGeneralError(`No se puede conectar con el servidor. Verifica que el servidor esté ejecutándose en ${API_URL} o tu conexión a internet.`);
       } else {
         setGeneralError('Error inesperado al conectar con Google. Por favor, inténtalo más tarde.');
       }
@@ -123,7 +124,7 @@ const LoginScreen = ({ onNavigate, setUserData }) => {
 
     setIsLoading(true);
     try {
-      const response = await fetch('http://127.0.0.1:5000/auth/login', {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -154,7 +155,7 @@ const LoginScreen = ({ onNavigate, setUserData }) => {
     } catch (error) {
       console.error('Error de conexión:', error);
       if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
-        setGeneralError('No se puede conectar con el servidor. Verifica que el servidor esté ejecutándose en http://127.0.0.1:5000 o tu conexión a internet.');
+        setGeneralError(`No se puede conectar con el servidor. Verifica que el servidor esté ejecutándose en ${API_URL} o tu conexión a internet.`);
       } else {
         setGeneralError('Error de conexión. Verifica tu internet e inténtalo nuevamente.');
       }
@@ -172,11 +173,11 @@ const LoginScreen = ({ onNavigate, setUserData }) => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <header className="bg-white shadow-sm p-6 flex items-center">
+    <div className="min-h-screen bg-gradient-landing">
+      <header className="theme-card shadow-sm p-6 flex items-center">
         <button
           onClick={() => onNavigate('landing')}
-          className="mr-4 p-2 text-gray-600 hover:text-blue-600 transition-colors"
+          className="mr-4 p-2 theme-text-secondary hover:text-blue-600 transition-colors"
         >
           <ArrowLeft size={24} />
         </button>
@@ -184,9 +185,9 @@ const LoginScreen = ({ onNavigate, setUserData }) => {
       </header>
 
       <div className="flex items-center justify-center min-h-screen py-12">
-        <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+        <div className="theme-card rounded-2xl shadow-xl p-8 w-full max-w-md">
           <div className="text-center mb-8">
-            <p className="text-gray-600 mb-2">Te damos la bienvenida</p>
+            <p className="theme-text-secondary mb-2">Te damos la bienvenida</p>
             <h1 className="text-3xl font-bold text-blue-600 mb-6">INICIAR SESIÓN</h1>
           </div>
 
@@ -196,7 +197,7 @@ const LoginScreen = ({ onNavigate, setUserData }) => {
           {/* Botón de Google Sign-In */}
           <div id="google-signin-button" className="flex justify-center mb-6"></div>
 
-          <div className="text-center text-gray-500 mb-6"><span>o</span></div>
+          <div className="text-center theme-text-secondary mb-6"><span>o</span></div>
 
           <div className="space-y-6">
             <div>
@@ -209,8 +210,8 @@ const LoginScreen = ({ onNavigate, setUserData }) => {
                 placeholder="ejemplo@correo.com o 12345678"
                 value={formData.identificador}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
-                  errors.identificador ? 'border-red-500 bg-red-50' : 'border-gray-200'
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors theme-bg-primary theme-text-primary ${
+                  errors.identificador ? 'border-red-500 bg-red-50' : 'theme-border'
                 }`}
               />
               {errors.identificador && (
@@ -231,8 +232,8 @@ const LoginScreen = ({ onNavigate, setUserData }) => {
                 placeholder="Ingresa tu contraseña"
                 value={formData.password}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
-                  errors.password ? 'border-red-500 bg-red-50' : 'border-gray-200'
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors theme-bg-primary theme-text-primary ${
+                  errors.password ? 'border-red-500 bg-red-50' : 'theme-border'
                 }`}
               />
               {errors.password && (
@@ -270,7 +271,7 @@ const LoginScreen = ({ onNavigate, setUserData }) => {
           </div>
 
           <div className="text-center mt-6">
-            <p className="text-gray-600">¿No tienes una cuenta?</p>
+            <p className="theme-text-secondary">¿No tienes una cuenta?</p>
             <button
               onClick={() => onNavigate('register')}
               className="text-blue-600 hover:text-blue-800 font-semibold transition-colors"

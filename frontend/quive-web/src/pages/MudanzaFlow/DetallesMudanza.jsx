@@ -3,6 +3,7 @@ import { Calendar, Clock } from 'lucide-react';
 import UbicacionPeru from '../Registerutils/address';
 import RutaMap from '../utils/RutaMap';
 import { parseUbicacion } from '../utils/ubicacion';
+import API_URL from '../../api';
 
 const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, nextStep }) => {
   // ───────── Límites dinámicos para fecha ─────────
@@ -97,14 +98,14 @@ const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, 
 
   // ──────────────── Render ────────────────
   return (
-    <div className="p-6">
-      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+    <div className="p-6 theme-bg-primary theme-text-primary">
+      <div className="theme-card rounded-lg p-6">
         <h3 className="text-lg font-bold text-blue-600 mb-6 text-center">DETALLES DE LA MUDANZA</h3>
 
         <div className="space-y-4">
           {/* Origen */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium theme-text-primary mb-2">
               Dirección de Origen <span className="text-red-500">*</span>
             </label>
             <UbicacionPeru
@@ -117,7 +118,7 @@ const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, 
 
           {/* Destino */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium theme-text-primary mb-2">
               Dirección de Destino <span className="text-red-500">*</span>
             </label>
             <UbicacionPeru
@@ -142,14 +143,14 @@ const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, 
           {/* Fecha y Hora */}
           <div className="grid grid-cols-2 gap-4 mt-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium theme-text-primary mb-2">
                 Fecha <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                 <input
                   type="date"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors"
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border theme-border theme-bg-primary theme-text-primary focus:ring-2 focus:ring-blue-500 transition-colors"
                   value={formData.fecha}
                   onChange={(e) => { cleanError('fecha'); setFormData({ ...formData, fecha: e.target.value }); }}
                   min={minDateString}
@@ -159,14 +160,14 @@ const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, 
               {errors.fecha && <p className="text-red-500 text-sm">{errors.fecha}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium theme-text-primary mb-2">
                 Hora <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <Clock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                 <input
                   type="time"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition-colors"
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border theme-border theme-bg-primary theme-text-primary focus:ring-2 focus:ring-blue-500 transition-colors"
                   value={formData.hora}
                   onChange={(e) => { cleanError('hora'); setFormData({ ...formData, hora: e.target.value }); }}
                 />
@@ -174,6 +175,7 @@ const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, 
               {errors.hora && <p className="text-red-500 text-sm">{errors.hora}</p>}
             </div>
           </div>
+
           {/* Error rango fecha-hora */}
           {errors.fechaHora && <p className="text-red-500 text-sm mt-2">{errors.fechaHora}</p>}
         </div>
@@ -192,14 +194,46 @@ const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, 
               .slice(0, 19);
             if (!huboCambios()) { nextStep(); return; }
             try {
-              const payload = { id_usuario: userData.id_usuario, origen: origenFinal, destino: destinoFinal, distancia: distanciaKm, tiempo_estimado: duracionMin, ruta: rutaGeo, fecha_hora: fechaHora };
-              const res = await fetch(formData.id_solicitud ? `http://127.0.0.1:5000/solicitudes/${formData.id_solicitud}` : 'http://127.0.0.1:5000/solicitudes', { method: formData.id_solicitud ? 'PUT' : 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+              const payload = {
+                id_usuario: userData.id_usuario,
+                origen: origenFinal,
+                destino: destinoFinal,
+                distancia: distanciaKm,
+                tiempo_estimado: duracionMin,
+                ruta: rutaGeo,
+                fecha_hora: fechaHora
+              };
+              const res = await fetch(
+                formData.id_solicitud
+                  ? `${API_URL}/solicitudes/${formData.id_solicitud}`
+                  : `${API_URL}/solicitudes`,
+                {
+                  method: formData.id_solicitud ? 'PUT' : 'POST',
+                  credentials: 'include',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(payload)
+                }
+              );
               const data = await res.json();
-              if (!res.ok) { alert(data.msg || 'Error al procesar mudanza'); return; }
-              actualizarFormData({ id_solicitud: data.id_solicitud || formData.id_solicitud, origen: origenFinal, destino: destinoFinal, distancia: distanciaKm, tiempos_estimado: duracionMin, ruta: rutaGeo, hora: formData.hora, fecha: formData.fecha });
+              if (!res.ok) {
+                alert(data.msg || 'Error al procesar mudanza');
+                return;
+              }
+              actualizarFormData({
+                id_solicitud: data.id_solicitud || formData.id_solicitud,
+                origen: origenFinal,
+                destino: destinoFinal,
+                distancia: distanciaKm,
+                tiempos_estimado: duracionMin,
+                ruta: rutaGeo,
+                hora: formData.hora,
+                fecha: formData.fecha
+              });
               nextStep();
-              return; 
-            } catch (err) { console.error('Error al conectar con API:', err); alert('Error de red.'); }
+            } catch (err) {
+              console.error('Error al conectar con API:', err);
+              alert('Error de red.');
+            }
           }}
           className="w-full bg-blue-500 text-white py-3 rounded-lg font-medium mt-6 hover:bg-blue-600 transition-colors"
         >
@@ -208,6 +242,7 @@ const DetallesMudanza = ({ userData, formData, actualizarFormData, setFormData, 
       </div>
     </div>
   );
+
 };
 
 export default DetallesMudanza;

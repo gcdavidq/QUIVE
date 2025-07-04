@@ -17,7 +17,7 @@ const Paso3DireccionFoto = ({ direccion, setUbicacion, setFotoPerfil, setCurrent
           defaultPreview={null}
           onFotoSeleccionada={(file) => setFotoPerfil(file)}
           id_imagen="fotoPerfil"
-          imgClassName="w-28 h-28 rounded-full object-cover border-4 border-blue-300 shadow-md bg-white"
+          imgClassName="w-28 h-28 rounded-full object-cover border-4 border-blue-300 shadow-md theme-bg-primary"
         />
       </div>
 
@@ -27,7 +27,7 @@ const Paso3DireccionFoto = ({ direccion, setUbicacion, setFotoPerfil, setCurrent
         <button
           type="button"
           onClick={() => setCurrentStep(1)}
-          className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-semibold"
+          className="px-6 py-3 theme-bg-secondary theme-text-primary rounded-lg hover:opacity-80 font-semibold transition-opacity"
         >
           Volver
         </button>
@@ -42,7 +42,9 @@ const Paso3DireccionFoto = ({ direccion, setUbicacion, setFotoPerfil, setCurrent
             }
           }}
           disabled={!puedeContinuar()}
-          className={`px-6 py-3 rounded-lg font-semibold text-white ${puedeContinuar() ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'}`}
+          className={`px-6 py-3 rounded-lg font-semibold text-white transition-colors ${
+            puedeContinuar() ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
+          }`}
         >
           Siguiente
         </button>

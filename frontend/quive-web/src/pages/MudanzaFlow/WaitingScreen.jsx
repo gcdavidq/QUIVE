@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Loader2 } from "lucide-react";
+import API_URL from "../../api"; // Asegúrate de que esta ruta sea correcta
 
 const WaitingScreen = ({ onCancelar, actualizarFormData, formData, userData, nextStep }) => {
   const pollingRef = useRef(null);
@@ -15,7 +16,7 @@ const WaitingScreen = ({ onCancelar, actualizarFormData, formData, userData, nex
       pollingRef.current = setInterval(async () => {
         try {
           const response = await fetch(
-            `http://127.0.0.1:5000/asignaciones/${id_asignacion}/estado`
+            `${API_URL}/asignaciones/${id_asignacion}/estado`
           );
           const miAsignacion = await response.json(); // Ya es un objeto, no lista
 
@@ -58,16 +59,18 @@ const WaitingScreen = ({ onCancelar, actualizarFormData, formData, userData, nex
   }, [formData.asignacion, actualizarFormData, onCancelar, userData.tipo_usuario, nextStep]);
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center">
-      <div className="p-8 bg-white rounded-2xl shadow-xl text-center space-y-4">
+    <div className="absolute inset-0 flex items-center justify-center z-50 bg-black/30 backdrop-blur-sm">
+      <div className="theme-card p-8 rounded-2xl shadow-xl text-center space-y-4 max-w-md w-full">
         <Loader2 className="w-16 h-16 animate-spin text-blue-600 mx-auto" />
-        <h2 className="text-2xl font-semibold text-gray-800">Enviando solicitud...</h2>
-        <p className="text-gray-600">
+        <h2 className="text-2xl font-semibold theme-text-primary">
+          Enviando solicitud...
+        </h2>
+        <p className="theme-text-secondary">
           Por favor espera mientras el conductor acepta o rechaza la solicitud.
         </p>
         <button
           onClick={onCancelar}
-          className="mt-4 px-6 py-2 rounded-lg bg-red-500 text-white font-medium hover:bg-red-600 transition"
+          className="btn-delete bg-red-500 text-white font-medium px-6 py-2 rounded-lg hover:bg-red-600 transition"
         >
           Cancelar transportista
         </button>

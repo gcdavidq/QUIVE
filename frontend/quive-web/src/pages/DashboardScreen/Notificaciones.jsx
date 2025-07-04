@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import API_URL from '../../api';
 
 dayjs.extend(isToday);
 dayjs.extend(isSameOrAfter);
@@ -18,14 +19,14 @@ const Notificaciones = ({ userData, onNotificacionLeida }) => {
   useEffect(() => {
     if (!userData?.id_usuario) return;
     axios
-      .get(`http://localhost:5000/notificaciones/${userData.id_usuario}`)
+      .get(`${API_URL}/notificaciones/${userData.id_usuario}`)
       .then((res) => setNotificaciones(res.data))
       .catch((err) => console.error("Error al obtener notificaciones:", err));
   }, [userData]);
 
   const marcarComoLeida = (id_notificacion) => {
     axios
-      .patch(`http://localhost:5000/notificaciones/${id_notificacion}/leido`)
+      .patch(`${API_URL}/notificaciones/${id_notificacion}/leido`)
       .then(() => {
         setNotificaciones((prev) =>
           prev.map((n) =>
@@ -34,7 +35,6 @@ const Notificaciones = ({ userData, onNotificacionLeida }) => {
               : n
           )
         );
-        // Notificar al componente padre que se marcó una notificación como leída
         if (onNotificacionLeida) {
           onNotificacionLeida();
         }
@@ -55,17 +55,11 @@ const Notificaciones = ({ userData, onNotificacionLeida }) => {
 
     notis.forEach((n) => {
       const fecha = dayjs(n.fecha);
-      if (fecha.isToday()) {
-        hoy.push(n);
-      } else if (fecha.isSame(fechaAyer, 'day')) {
-        ayer.push(n);
-      } else if (fecha.isSameOrAfter(startOfWeek)) {
-        semana.push(n);
-      } else if (fecha.isSameOrAfter(startOfMonth)) {
-        mes.push(n);
-      } else {
-        antiguos.push(n);
-      }
+      if (fecha.isToday()) hoy.push(n);
+      else if (fecha.isSame(fechaAyer, 'day')) ayer.push(n);
+      else if (fecha.isSameOrAfter(startOfWeek)) semana.push(n);
+      else if (fecha.isSameOrAfter(startOfMonth)) mes.push(n);
+      else antiguos.push(n);
     });
 
     return [
@@ -80,11 +74,18 @@ const Notificaciones = ({ userData, onNotificacionLeida }) => {
   const grupos = agruparNotificaciones(notificaciones);
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
-      <div className="bg-white rounded-2xl shadow-xl w-[90%] md:w-[60%] p-6 max-h-[90vh] flex flex-col">
+    <div
+      className="fixed inset-0 flex items-center justify-center z-[150] bg-black/30 backdrop-blur-sm"
+      onClick={() => navigate('..')}
+    >
+      <div
+        className="theme-card rounded-2xl w-[90%] md:w-[60%] p-6 max-h-[90vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-blue-600 flex items-center space-x-2">
+          <h2 className="text-xl font-bold theme-title-primary flex items-center gap-2">
             <Bell className="w-6 h-6 text-blue-500" />
             <span>Notificaciones</span>
           </h2>
@@ -101,27 +102,29 @@ const Notificaciones = ({ userData, onNotificacionLeida }) => {
         {/* Contenido */}
         <div className="overflow-y-auto pr-1 space-y-6" style={{ maxHeight: 'calc(90vh - 80px)' }}>
           {grupos.length === 0 ? (
-            <p className="text-gray-500 text-sm text-center py-4">No tienes notificaciones.</p>
+            <p className="theme-text-secondary text-sm text-center py-4">
+              No tienes notificaciones.
+            </p>
           ) : (
             grupos.map((grupo, idx) => (
               <div key={idx}>
-                <h3 className="text-sm font-semibold text-gray-600 mb-2">{grupo.titulo}</h3>
+                <h3 className="text-sm font-semibold theme-text-secondary mb-2">{grupo.titulo}</h3>
                 <div className="space-y-3">
                   {grupo.data.map((noti) => (
                     <div
                       key={noti.id_notificacion}
-                      className={`p-4 rounded-lg shadow border transition ${
+                      className={`p-4 rounded-lg transition border ${
                         noti.leido
-                          ? 'bg-gray-50 border-gray-200'
-                          : 'bg-white border-blue-500'
+                          ? 'theme-bg-secondary theme-border shadow-sm'
+                          : 'theme-card border-blue-500 shadow-md'
                       }`}
                     >
                       <div className="flex justify-between items-start">
-                        <div className="flex items-center space-x-3">
+                        <div className="flex items-center gap-3">
                           <Info className="w-5 h-5 text-blue-600" />
                           <div>
-                            <p className="text-sm text-gray-800">{noti.mensaje}</p>
-                            <p className="text-xs text-gray-500 flex items-center mt-1">
+                            <p className="text-sm theme-text-primary">{noti.mensaje}</p>
+                            <p className="text-xs theme-text-secondary flex items-center mt-1">
                               <CalendarClock className="w-3 h-3 mr-1" />
                               {dayjs(noti.fecha).format('DD/MM/YYYY HH:mm')}
                             </p>

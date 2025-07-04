@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { MapPin, Phone, X, CreditCard, AlertCircle, RefreshCw } from 'lucide-react';
 import axios from 'axios';
 import PaymentMethodSelector from '../utils/PaymentMethodSelector';
+import API_URL from '../../api';
 
 const PedidosTab = ({ userData, setActiveTab }) => {
   const [asignaciones, setAsignaciones] = useState([]);
@@ -26,7 +27,7 @@ const PedidosTab = ({ userData, setActiveTab }) => {
     
     try {
       setActualizandoDatos(true);
-      const response = await axios.get(`http://localhost:5000/asignaciones/${userData.id_usuario}/${userData.tipo_usuario}`);
+      const response = await axios.get(`${API_URL}/asignaciones/${userData.id_usuario}/${userData.tipo_usuario}`);
       setAsignaciones(response.data);
     } catch (error) {
       console.error('Error al cargar asignaciones:', error);
@@ -54,25 +55,35 @@ const PedidosTab = ({ userData, setActiveTab }) => {
 
   // Cargar métodos de pago disponibles
   useEffect(() => {
-    const metodosGuardados = localStorage.getItem('metodosSeleccionados');
-    if (metodosGuardados) {
-      const metodos = JSON.parse(metodosGuardados);
-      setMetodosSeleccionados(metodos);
-      
-      // Establecer el primer método disponible como activo
-      const metodosDisponibles = Object.keys(metodos);
-      if (metodosDisponibles.length > 0) {
-        setMetodoActivo(metodosDisponibles[0]);
+    try {
+      const metodosGuardados = localStorage.getItem('metodosSeleccionados');
+      const metodos = JSON.parse(metodosGuardados || '{}');
+
+      if (metodos && typeof metodos === 'object') {
+        setMetodosSeleccionados(metodos);
+
+        const metodosDisponibles = Object.keys(metodos);
+        if (metodosDisponibles.length > 0) {
+          setMetodoActivo(metodosDisponibles[0]);
+        }
       }
+    } catch (error) {
+      console.error('Error al cargar métodos de pago desde localStorage:', error);
+      setMetodosSeleccionados({});
     }
   }, []);
 
   // Función para verificar si el transportista tiene método de pago
   const tieneMetodoPago = () => {
-    const metodosGuardados = localStorage.getItem('metodosSeleccionados');
-    return metodosGuardados !== null && Object.keys(JSON.parse(metodosGuardados)).length > 0;
+    try {
+      const metodosGuardados = localStorage.getItem('metodosSeleccionados');
+      const metodos = JSON.parse(metodosGuardados || '{}');
+      return Object.keys(metodos).length > 0;
+    } catch (error) {
+      console.error('Error al leer metodosSeleccionados del localStorage:', error);
+      return false;
+    }
   };
-
   // Función para mostrar error en modal
   const mostrarError = (mensaje) => {
     setMensajeError(mensaje);
@@ -82,7 +93,7 @@ const PedidosTab = ({ userData, setActiveTab }) => {
   // Función mejorada para verificar si la asignación aún existe
   const verificarAsignacionExiste = async (id_asignacion) => {
     try {
-      const response = await axios.get(`http://localhost:5000/asignaciones/${id_asignacion}/estado`);
+      const response = await axios.get(`${API_URL}/asignaciones/${id_asignacion}/estado`);
       console.log('Asignación verificada:', response);
       return true;
     } catch (error) {
@@ -133,7 +144,7 @@ const PedidosTab = ({ userData, setActiveTab }) => {
       }
 
       // Para rechazar o si no es confirmación, proceder directamente
-      await axios.post(`http://localhost:5000/asignaciones/${id_asignacion}/respuesta`, { estado });
+      await axios.post(`${API_URL}/asignaciones/${id_asignacion}/respuesta`, { estado });
       
       // Actualizar estado local
       setAsignaciones(prev =>
@@ -179,7 +190,7 @@ const PedidosTab = ({ userData, setActiveTab }) => {
 
       console.log('Confirmando con método:', metodoActivo, 'para pedido:', metodosSeleccionados[metodoActivo]);
 
-      await axios.post(`http://localhost:5000/asignaciones/${pedidoSeleccionado}/respuesta`, { 
+      await axios.post(`${API_URL}/asignaciones/${pedidoSeleccionado}/respuesta`, { 
         estado: 'confirmada',
         metodo_pago: metodosSeleccionados[metodoActivo] || null,
         tipo_metodo: metodoActivo
@@ -275,10 +286,10 @@ const PedidosTab = ({ userData, setActiveTab }) => {
     });
 
   return (
-    <div>
+    <div className="relative">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center space-x-3">
-          <h2 className="text-2xl font-bold text-blue-600">Mis Pedidos</h2>
+          <h2 className="text-2xl font-bold theme-title-primary">Mis Pedidos</h2>
           {actualizandoDatos && (
             <RefreshCw className="text-blue-500 animate-spin" size={20} />
           )}
@@ -286,7 +297,7 @@ const PedidosTab = ({ userData, setActiveTab }) => {
         {userData.tipo_usuario !== 'transportista' && (
           <button
             onClick={() => setActiveTab('mudanza')}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm"
+            className="btn-secondary text-sm px-4 py-2"
           >
             Nuevo Pedido
           </button>
@@ -296,23 +307,22 @@ const PedidosTab = ({ userData, setActiveTab }) => {
       {/* Filtros */}
       <div className="flex flex-wrap gap-4 mt-4 mb-6">
         <div>
-          <label className="text-sm text-gray-600 font-medium">Orden por Fecha</label>
+          <label className="text-sm theme-text-secondary font-medium">Orden por Fecha</label>
           <select
             value={ordenFecha}
             onChange={(e) => setOrdenFecha(e.target.value)}
-            className="block mt-1 px-3 py-2 border rounded-lg text-sm bg-white shadow-sm focus:ring focus:ring-blue-200"
+            className="form-select mt-1"
           >
             <option value="recientes">Más recientes primero</option>
             <option value="antiguos">Más antiguos primero</option>
           </select>
         </div>
-
         <div>
-          <label className="text-sm text-gray-600 font-medium">Filtrar por Estado</label>
+          <label className="text-sm theme-text-secondary font-medium">Filtrar por Estado</label>
           <select
             value={filtroEstado}
             onChange={(e) => setFiltroEstado(e.target.value)}
-            className="block mt-1 px-3 py-2 border rounded-lg text-sm bg-white shadow-sm focus:ring focus:ring-blue-200"
+            className="form-select mt-1"
           >
             <option value="todos">Todos</option>
             <option value="pendiente">Pendiente</option>
@@ -324,13 +334,12 @@ const PedidosTab = ({ userData, setActiveTab }) => {
             <option value="rechazada">Rechazado</option>
           </select>
         </div>
-
         <div>
-          <label className="text-sm text-gray-600 font-medium">Orden por Precio</label>
+          <label className="text-sm theme-text-secondary font-medium">Orden por Precio</label>
           <select
             value={ordenPrecio}
             onChange={(e) => setOrdenPrecio(e.target.value)}
-            className="block mt-1 px-3 py-2 border rounded-lg text-sm bg-white shadow-sm focus:ring focus:ring-blue-200"
+            className="form-select mt-1"
           >
             <option value="ninguno">Sin ordenar</option>
             <option value="menor">Precio menor a mayor</option>
@@ -339,110 +348,105 @@ const PedidosTab = ({ userData, setActiveTab }) => {
         </div>
       </div>
 
-      {/* Pedidos */}
+      {/* Lista de pedidos */}
       <div className="space-y-4">
-        {pedidosFiltrados.map(pedido => {
-          const estadoActual = obtenerEstadoActual(pedido);
-          
-          return (
-            <div key={pedido.id_asignacion} className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center mb-2">
-                    <MapPin className="text-blue-600 mr-2" size={16} />
-                    <span className="text-sm text-gray-600">Desde: {pedido.origen.split(';')[0]}</span>
+        {pedidosFiltrados.length === 0 ? (
+          <div className="text-center theme-text-secondary py-10">
+            <p className="text-lg">No se encontraron pedidos</p>
+            <p className="text-sm">Verifica los filtros o espera a que se generen nuevas asignaciones.</p>
+          </div>
+        ) : (
+          pedidosFiltrados.map((pedido) => {
+            const estadoActual = obtenerEstadoActual(pedido);
+            return (
+              <div key={pedido.id_asignacion} className="theme-card rounded-lg p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center mb-2">
+                      <MapPin className="text-blue-600 mr-2" size={16} />
+                      <span className="text-sm theme-text-secondary">Desde: {pedido.origen.split(';')[0]}</span>
+                    </div>
+                    <div className="flex items-center mb-2">
+                      <MapPin className="text-green-600 mr-2" size={16} />
+                      <span className="text-sm theme-text-secondary">Hasta: {pedido.destino.split(';')[0]}</span>
+                    </div>
+                    <div className="text-sm theme-text-secondary">Fecha: {new Date(pedido.fecha_hora).toLocaleDateString()}</div>
                   </div>
-                  <div className="flex items-center mb-2">
-                    <MapPin className="text-green-600 mr-2" size={16} />
-                    <span className="text-sm text-gray-600">Hasta: {pedido.destino.split(';')[0]}</span>
-                  </div>
-                  <div className="text-sm text-gray-500">Fecha: {new Date(pedido.fecha_hora).toLocaleDateString()}</div>
-                </div>
 
-                <div className="text-right">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getEstadoColor(estadoActual)}`}>
-                    {getEstadoTexto(estadoActual)}
-                  </span>
-                  <p className="text-xl font-bold text-blue-600 mt-2">S/ {pedido.precio}</p>
-                </div>
-              </div>
-
-              {/* Info adicional del cliente */}
-              <div className="flex items-center space-x-4 mb-4">
-                <img src={pedido.usuario_foto} alt="Foto usuario" className="w-10 h-10 rounded-full object-cover" />
-                <div>
-                  <p className="text-sm font-medium text-gray-700">{pedido.usuario_nombre}</p>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Phone size={14} className="mr-1" /> {pedido.usuario_telefono}
+                  <div className="text-right">
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getEstadoColor(estadoActual)}`}>
+                      {getEstadoTexto(estadoActual)}
+                    </span>
+                    <p className="text-xl font-bold theme-title-primary mt-2">S/ {pedido.precio}</p>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex justify-end space-x-2">
-                {puedeResponder(pedido) && (
-                  <>
-                    <button
-                      onClick={() => responder(pedido.id_asignacion, 'confirmada')}
-                      disabled={procesandoRespuesta === pedido.id_asignacion}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        procesandoRespuesta === pedido.id_asignacion
-                          ? 'bg-gray-400 text-white cursor-not-allowed'
-                          : 'bg-green-600 text-white hover:bg-green-700'
-                      }`}
-                    >
-                      {procesandoRespuesta === pedido.id_asignacion ? 'Procesando...' : 'Aceptar'}
-                    </button>
-                    <button
-                      onClick={() => responder(pedido.id_asignacion, 'rechazada')}
-                      disabled={procesandoRespuesta === pedido.id_asignacion}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        procesandoRespuesta === pedido.id_asignacion
-                          ? 'bg-gray-400 text-white cursor-not-allowed'
-                          : 'bg-red-600 text-white hover:bg-red-700'
-                      }`}
-                    >
-                      {procesandoRespuesta === pedido.id_asignacion ? 'Procesando...' : 'Rechazar'}
-                    </button>
-                  </>
-                )}
-                {!puedeResponder(pedido) && (
-                  <span className="text-sm text-gray-500 italic">
-                    {estadoActual === 'pendiente' ? 'Esperando respuesta' : 'Ya procesado'}
-                  </span>
-                )}
+                {/* Info del cliente */}
+                <div className="flex items-center space-x-4 mb-4">
+                  <img src={pedido.usuario_foto} alt="Foto usuario" className="w-10 h-10 rounded-full object-cover" />
+                  <div>
+                    <p className="text-sm font-medium theme-text-primary">{pedido.usuario_nombre}</p>
+                    <div className="flex items-center text-sm theme-text-secondary">
+                      <Phone size={14} className="mr-1" /> {pedido.usuario_telefono}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-2">
+                  {puedeResponder(pedido) ? (
+                    <>
+                      <button
+                        onClick={() => responder(pedido.id_asignacion, 'confirmada')}
+                        disabled={procesandoRespuesta === pedido.id_asignacion}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          procesandoRespuesta === pedido.id_asignacion
+                            ? 'bg-gray-400 text-white cursor-not-allowed'
+                            : 'bg-green-600 text-white hover:bg-green-700'
+                        }`}
+                      >
+                        {procesandoRespuesta === pedido.id_asignacion ? 'Procesando...' : 'Aceptar'}
+                      </button>
+                      <button
+                        onClick={() => responder(pedido.id_asignacion, 'rechazada')}
+                        disabled={procesandoRespuesta === pedido.id_asignacion}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          procesandoRespuesta === pedido.id_asignacion
+                            ? 'bg-gray-400 text-white cursor-not-allowed'
+                            : 'bg-red-600 text-white hover:bg-red-700'
+                        }`}
+                      >
+                        {procesandoRespuesta === pedido.id_asignacion ? 'Procesando...' : 'Rechazar'}
+                      </button>
+                    </>
+                  ) : (
+                    <span className="text-sm theme-text-secondary italic">
+                      {estadoActual === 'pendiente' ? 'Esperando respuesta' : 'Ya procesado'}
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
 
-      {/* Modal de Error */}
+      {/* Modal de error */}
       {showModalError && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 relative">
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <div className="theme-card p-6 rounded-lg max-w-md w-full mx-4 relative">
             <button
               onClick={() => setShowModalError(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
             >
               <X size={24} />
             </button>
-
             <div className="text-center">
-              <div className="mb-4">
-                <AlertCircle className="mx-auto text-red-500" size={48} />
-              </div>
-              
-              <h3 className="text-xl font-bold text-gray-800 mb-3">
-                Solicitud No Disponible
-              </h3>
-              
-              <p className="text-gray-600 mb-6">
-                {mensajeError}
-              </p>
-
+              <AlertCircle className="mx-auto text-red-500 mb-4" size={48} />
+              <h3 className="text-xl font-bold theme-text-primary mb-3">Solicitud No Disponible</h3>
+              <p className="theme-text-secondary mb-6">{mensajeError}</p>
               <button
                 onClick={() => setShowModalError(false)}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium"
+                className="btn-secondary px-6 py-3 rounded-lg"
               >
                 Entendido
               </button>
@@ -451,41 +455,32 @@ const PedidosTab = ({ userData, setActiveTab }) => {
         </div>
       )}
 
-      {/* Modal de Método de Pago Requerido */}
+      {/* Modal método de pago requerido */}
       {showModalMetodoPago && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 relative">
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <div className="theme-card p-6 rounded-lg max-w-md w-full mx-4 relative">
             <button
               onClick={() => setShowModalMetodoPago(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
             >
               <X size={24} />
             </button>
-
             <div className="text-center">
-              <div className="mb-4">
-                <CreditCard className="mx-auto text-blue-600" size={48} />
-              </div>
-              
-              <h3 className="text-xl font-bold text-gray-800 mb-3">
-                Método de Pago Requerido
-              </h3>
-              
-              <p className="text-gray-600 mb-6">
+              <CreditCard className="mx-auto text-blue-600 mb-4" size={48} />
+              <h3 className="text-xl font-bold theme-text-primary mb-3">Método de Pago Requerido</h3>
+              <p className="theme-text-secondary mb-6">
                 Para confirmar servicios como transportista, debes tener al menos un método de pago vinculado a tu cuenta.
               </p>
-
               <div className="flex flex-col space-y-3">
                 <button
                   onClick={irAMetodosPago}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium"
+                  className="btn-secondary py-3"
                 >
                   Vincular Método de Pago
                 </button>
-                
                 <button
                   onClick={() => setShowModalMetodoPago(false)}
-                  className="text-gray-500 hover:text-gray-700 font-medium"
+                  className="theme-text-secondary hover:text-gray-700 font-medium"
                 >
                   Cerrar
                 </button>
@@ -495,10 +490,10 @@ const PedidosTab = ({ userData, setActiveTab }) => {
         </div>
       )}
 
-      {/* Modal de Selección de Método de Pago */}
+      {/* Modal selección de método de pago */}
       {showModalSeleccionPago && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4 relative max-h-[80vh] overflow-y-auto">
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <div className="theme-card p-6 rounded-lg max-w-lg w-full mx-4 relative max-h-[80vh] overflow-y-auto">
             <button
               onClick={() => {
                 setShowModalSeleccionPago(false);
@@ -509,16 +504,13 @@ const PedidosTab = ({ userData, setActiveTab }) => {
               <X size={24} />
             </button>
 
-            <div className="mb-6">
-              <h3 className="text-xl font-bold text-blue-600 mb-2 text-center">
-                Seleccionar Método de Pago
-              </h3>
-              <p className="text-gray-600 text-center text-sm">
-                Elige el método de pago para recibir el cobro de este servicio
-              </p>
-            </div>
+            <h3 className="text-xl font-bold theme-title-primary mb-2 text-center">
+              Seleccionar Método de Pago
+            </h3>
+            <p className="theme-text-secondary text-center text-sm mb-6">
+              Elige el método de pago para recibir el cobro de este servicio
+            </p>
 
-            {/* Componente reutilizable PaymentMethodSelector */}
             <PaymentMethodSelector
               metodosSeleccionados={metodosSeleccionados}
               metodoActivo={metodoActivo}
@@ -533,14 +525,13 @@ const PedidosTab = ({ userData, setActiveTab }) => {
               className="mb-6"
             />
 
-            {/* Botones de acción */}
             <div className="flex space-x-4">
               <button
                 onClick={() => {
                   setShowModalSeleccionPago(false);
                   setPedidoSeleccionado(null);
                 }}
-                className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                className="flex-1 theme-border theme-text-secondary py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors"
               >
                 Cancelar
               </button>
@@ -548,8 +539,8 @@ const PedidosTab = ({ userData, setActiveTab }) => {
                 onClick={confirmarConMetodo}
                 disabled={!metodoActivo}
                 className={`flex-1 py-3 rounded-lg font-medium transition-colors ${
-                  metodoActivo 
-                    ? "bg-green-600 text-white hover:bg-green-700" 
+                  metodoActivo
+                    ? "bg-green-600 text-white hover:bg-green-700"
                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
                 }`}
               >
@@ -560,6 +551,7 @@ const PedidosTab = ({ userData, setActiveTab }) => {
         </div>
       )}
     </div>
+
   );
 };
 

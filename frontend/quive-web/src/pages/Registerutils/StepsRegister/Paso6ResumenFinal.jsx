@@ -1,4 +1,5 @@
 import React from 'react';
+import API_URL from "../../../api";
 
 const Paso6ResumenFinal = ({ formData, direccion, fotoPerfil, documentos, tarifas, setUserData, onNavigate }) => {
   const enviarRegistro = async () => {
@@ -15,7 +16,7 @@ const Paso6ResumenFinal = ({ formData, direccion, fotoPerfil, documentos, tarifa
     formPayload.append("foto_perfil_url", fotoPerfil || "null");
 
     try {
-      const response = await fetch("http://127.0.0.1:5000/auth/register", {
+      const response = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         credentials: "include",
         body: formPayload,
@@ -29,7 +30,7 @@ const Paso6ResumenFinal = ({ formData, direccion, fotoPerfil, documentos, tarifa
         vehiculoPayload.append("id_usuario", data.usuario.id_usuario);
         vehiculoPayload.append("placa", formData.placa);
         vehiculoPayload.append("id_tipo_vehiculo", formData.tipoVehiculo);
-        await fetch("http://127.0.0.1:5000/vehiculos/me", {
+        await fetch(`${API_URL}/vehiculos/me`, {
           method: "POST",
           credentials: "include",
           body: vehiculoPayload,
@@ -40,7 +41,7 @@ const Paso6ResumenFinal = ({ formData, direccion, fotoPerfil, documentos, tarifa
         documentosPayload.append("tarjeta_propiedad_url", documentos.tarjeta_propiedad);
         documentosPayload.append("certificado_itv_url", documentos.certificado_itv);
         documentosPayload.append("id_usuario", data.usuario.id_usuario);
-        await fetch("http://127.0.0.1:5000/transportistas/me/documentos", {
+        await fetch(`${API_URL}/transportistas/me/documentos`, {
           method: "POST",
           credentials: "include",
           body: documentosPayload,
@@ -55,7 +56,7 @@ const Paso6ResumenFinal = ({ formData, direccion, fotoPerfil, documentos, tarifa
           recargo_embalaje: parseFloat(tarifas.recargo_embalaje) || 0.0,
         };
 
-        await fetch("http://127.0.0.1:5000/transportistas/me/tarifa", {
+        await fetch(`${API_URL}/transportistas/me/tarifa`, {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
@@ -63,7 +64,6 @@ const Paso6ResumenFinal = ({ formData, direccion, fotoPerfil, documentos, tarifa
         });
       }
 
-      setUserData(data.usuario);
       onNavigate("registroExitoso");
     } catch (error) {
       console.error("Error en el registro final:", error);
@@ -75,29 +75,109 @@ const Paso6ResumenFinal = ({ formData, direccion, fotoPerfil, documentos, tarifa
     <div className="space-y-6">
       <h2 className="text-xl font-bold text-blue-600 text-center">Resumen Final</h2>
 
-      <div className="text-sm text-gray-700 space-y-2">
-        <p><strong>Nombre:</strong> {formData.nombre}</p>
-        <p><strong>Email:</strong> {formData.email}</p>
-        <p><strong>Teléfono:</strong> {formData.telefono}</p>
-        <p><strong>DNI:</strong> {formData.dni}</p>
-        <p><strong>Dirección:</strong> {direccion.tipoVia} {direccion.nombreVia} {direccion.numero}, {direccion.distrito}, {direccion.provincia}, {direccion.departamento}</p>
-        <p><strong>Tipo Usuario:</strong> {formData.tipoUsuario}</p>
-        {formData.tipoUsuario === 'transportista' && (
-          <>
-            <p><strong>Placa:</strong> {formData.placa}</p>
-            <p><strong>Tipo Vehículo:</strong> {formData.tipoVehiculo}</p>
-            <p><strong>Tarifas:</strong> S/{tarifas.precio_por_m3}/m³, S/{tarifas.precio_por_kg}/kg, S/{tarifas.precio_por_km}/km</p>
-            <p><strong>Recargo Frágil:</strong> S/{tarifas.recargo_fragil || '0.00'}</p>
-            <p><strong>Recargo Embalaje:</strong> S/{tarifas.recargo_embalaje || '0.00'}</p>
-          </>
-        )}
+      <div className="theme-card p-6 rounded-lg space-y-4">
+        <div className="space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="font-semibold theme-text-primary min-w-24">Nombre:</span>
+            <span className="theme-text-secondary">{formData.nombre}</span>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="font-semibold theme-text-primary min-w-24">Email:</span>
+            <span className="theme-text-secondary">{formData.email}</span>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="font-semibold theme-text-primary min-w-24">Teléfono:</span>
+            <span className="theme-text-secondary">{formData.telefono}</span>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="font-semibold theme-text-primary min-w-24">DNI:</span>
+            <span className="theme-text-secondary">{formData.dni}</span>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row sm:items-start gap-2">
+            <span className="font-semibold theme-text-primary min-w-24">Dirección:</span>
+            <span className="theme-text-secondary">
+              {direccion.tipoVia} {direccion.nombreVia} {direccion.numero}, {direccion.distrito}, {direccion.provincia}, {direccion.departamento}
+            </span>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="font-semibold theme-text-primary min-w-24">Tipo Usuario:</span>
+            <span className="theme-text-secondary capitalize">{formData.tipoUsuario}</span>
+          </div>
+          
+          {formData.tipoUsuario === 'transportista' && (
+            <>
+              <div className="theme-border border-t pt-4 mt-4">
+                <h3 className="font-semibold theme-text-primary mb-3 text-lg">Información del Vehículo</h3>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <span className="font-medium theme-text-primary text-sm">Placa:</span>
+                    <span className="theme-text-secondary">{formData.placa}</span>
+                  </div>
+                  
+                  <div className="flex flex-col gap-1">
+                    <span className="font-medium theme-text-primary text-sm">Tipo Vehículo:</span>
+                    <span className="theme-text-secondary">{formData.tipoVehiculo}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="theme-border border-t pt-4 mt-4">
+                <h3 className="font-semibold theme-text-primary mb-3 text-lg">Tarifas</h3>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="theme-bg-secondary p-3 rounded-lg">
+                    <span className="font-medium theme-text-primary text-sm block mb-1">Por m³:</span>
+                    <span className="theme-text-secondary font-semibold">S/{tarifas.precio_por_m3}</span>
+                  </div>
+                  
+                  <div className="theme-bg-secondary p-3 rounded-lg">
+                    <span className="font-medium theme-text-primary text-sm block mb-1">Por kg:</span>
+                    <span className="theme-text-secondary font-semibold">S/{tarifas.precio_por_kg}</span>
+                  </div>
+                  
+                  <div className="theme-bg-secondary p-3 rounded-lg">
+                    <span className="font-medium theme-text-primary text-sm block mb-1">Por km:</span>
+                    <span className="theme-text-secondary font-semibold">S/{tarifas.precio_por_km}</span>
+                  </div>
+                </div>
+                
+                {(tarifas.recargo_fragil || tarifas.recargo_embalaje) && (
+                  <div className="mt-4 pt-3 theme-border border-t">
+                    <h4 className="font-medium theme-text-primary mb-2 text-sm">Recargos Adicionales:</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {tarifas.recargo_fragil && (
+                        <div className="theme-bg-secondary p-2 rounded">
+                          <span className="font-medium theme-text-primary text-sm block">Frágil:</span>
+                          <span className="theme-text-secondary">S/{tarifas.recargo_fragil}</span>
+                        </div>
+                      )}
+                      
+                      {tarifas.recargo_embalaje && (
+                        <div className="theme-bg-secondary p-2 rounded">
+                          <span className="font-medium theme-text-primary text-sm block">Embalaje:</span>
+                          <span className="theme-text-secondary">S/{tarifas.recargo_embalaje}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
-      <div className="flex justify-between pt-6">
+      <div className="flex flex-col sm:flex-row justify-between gap-4 pt-6">
         <button
           type="button"
           onClick={() => setUserData(null) || onNavigate('landing')}
-          className="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-semibold"
+          className="px-6 py-3 theme-bg-secondary theme-text-primary rounded-lg hover:opacity-80 font-semibold transition-all duration-200 theme-border border"
         >
           Cancelar
         </button>
@@ -105,7 +185,7 @@ const Paso6ResumenFinal = ({ formData, direccion, fotoPerfil, documentos, tarifa
         <button
           type="button"
           onClick={enviarRegistro}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold"
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
         >
           Confirmar Registro
         </button>
