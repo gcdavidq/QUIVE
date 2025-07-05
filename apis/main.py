@@ -7,7 +7,7 @@ from flask_cors import CORS
 def create_app():
     app = Flask(__name__)
     app.config.from_object(config)
-    CORS(app, supports_credentials=True, origins=["http://localhost:3000", "http://127.0.0.1:3000"])
+    CORS(app, supports_credentials=True, origins=["http://localhost:3000", "http://127.0.0.1:3000", "https://main.d13cxqp0t5s57g.amplifyapp.com", "http://3.220.31.129:5000"])
     app.secret_key = '08f90b23a5d1616bf319bc298105da20'
 
     # Registrar callback para cerrar la BD al terminar cada request
