@@ -79,6 +79,7 @@ const MetodosPago = ({ formData, setFormData, setUserData, actualizarFormData, v
         ...prev,
         formularioMudanza: {},
       }));
+      setFormData({});
       setMensaje("Servicio confirmado correctamente.");
       
       volver();

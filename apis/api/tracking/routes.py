@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from api.tracking.services import (
     post_tracking,
     get_ultimo_tracking,
-    get_ruta_tracking
+    get_ruta_tracking_s
 )
 from api.tracking.schemas import TrackingPostSchema
 from marshmallow import ValidationError
@@ -30,7 +30,10 @@ def get_ultimo(id_asignacion):
         return jsonify({"msg": "No hay datos de seguimiento"}), 404
     return jsonify(punto), 200
 
-@tracking_bp.route("/<int:id_asignacion>/ruta", methods=["GET"])
-def get_ruta(id_asignacion):
-    ruta = get_ruta_tracking(id_asignacion)
+@tracking_bp.route("/ruta/<int:user_id>", methods=["GET"])
+def get_ruta_tracking(user_id):
+    print(user_id)
+    ruta = get_ruta_tracking_s(user_id)
+    if not ruta:
+        return jsonify({"msg": "No tienes solicitudes pendientes"}), 404
     return jsonify(ruta), 200

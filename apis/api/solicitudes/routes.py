@@ -14,8 +14,7 @@ solicitudes_bp = Blueprint("solicitudes_bp", __name__)
 
 @solicitudes_bp.route("/mi_solicitud/<int:usuario_id>", methods=["GET"])
 def get_mi_solicitud(usuario_id):
-    user_id = usuario_id
-    sol = get_solicitud_by_user_id(user_id)
+    sol = get_solicitud_by_user_id(usuario_id)
     if not sol:
         return jsonify({"msg": "No tienes solicitudes pendientes"}), 404
     return jsonify(sol), 200
