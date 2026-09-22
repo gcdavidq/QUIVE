@@ -27,3 +27,7 @@ Thumbs.db
 
 # Build
 frontend/quive-web/build/
+
+# Plantilla de diseño de referencia (solo local)
+moveflow-dashboard/
+moveflow-dashboard.zip
