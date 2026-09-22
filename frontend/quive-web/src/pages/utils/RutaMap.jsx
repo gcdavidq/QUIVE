@@ -75,8 +75,8 @@ const RutaMap = ({ origen, destino, setRutaGeo, setDistanciaKm, setDuracionMin }
 
   if (errorRuta) {
     return (
-      <div className="text-red-600 text-sm mt-2">
-        ❌ No se pudo calcular una ruta entre las direcciones seleccionadas.
+      <div className="p-3 text-xs font-medium text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40">
+        No se pudo calcular una ruta entre las direcciones seleccionadas.
       </div>
     );
   }
@@ -84,8 +84,7 @@ const RutaMap = ({ origen, destino, setRutaGeo, setDistanciaKm, setDuracionMin }
   if (!ruta.length) return null;
 
   return (
-    <div className="mt-4 space-y-2">
-      <h4 className="font-semibold text-blue-600">Ruta estimada:</h4>
+    <div>
 
       <MapContainer
         center={[origen.lat, origen.lng]}
@@ -93,7 +92,6 @@ const RutaMap = ({ origen, destino, setRutaGeo, setDistanciaKm, setDuracionMin }
         style={{
           height: "300px",
           width: "100%",
-          borderRadius: "8px",
           zIndex: 0, // <- forzar que esté debajo
           position: "relative" // <- necesario para que funcione z-index
         }}
@@ -109,12 +107,12 @@ const RutaMap = ({ origen, destino, setRutaGeo, setDistanciaKm, setDuracionMin }
         <Marker position={[destino.lat, destino.lng]} icon={markerIcon}>
           <Popup>Destino</Popup>
         </Marker>
-        <Polyline positions={ruta} color="blue" weight={5} />
+        <Polyline positions={ruta} pathOptions={{ color: "#4d93f5", weight: 4, opacity: 0.85 }} />
       </MapContainer>
 
-      <div className="text-sm text-gray-700 mt-2 text-center">
-        <p><strong>Distancia:</strong> {mostrarDistancia} km</p>
-        <p><strong>Duración estimada:</strong> {mostrarDuracion} minutos</p>
+      <div className="flex items-center justify-between px-4 py-3 text-xs bg-[var(--color-surface)] border-t border-[var(--color-border)]">
+        <span className="theme-text-secondary">Distancia por carretera: <strong className="theme-text-primary">{mostrarDistancia} km</strong></span>
+        <span className="theme-text-secondary">Duración estimada: <strong className="theme-text-primary">{mostrarDuracion} min</strong></span>
       </div>
     </div>
   );

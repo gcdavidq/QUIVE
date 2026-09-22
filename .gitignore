@@ -1,10 +1,29 @@
+# Python
 .venv/
-
-
-# Python cache
 __pycache__/
 *.pyc
-# Node cache
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Node.js
 node_modules/
 .cache/
 *.pack
+
+# Entorno
+.env
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+frontend/quive-web/build/

@@ -1,14 +1,15 @@
-from flask import Flask, session
+from flask import Flask
 from config import config
 from db import close_db
 import os
 from flask_cors import CORS
 
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(config)
-    CORS(app, supports_credentials=True, origins=["*"])
-    app.secret_key = '08f90b23a5d1616bf319bc298105da20'
+    CORS(app, supports_credentials=True, origins=[config.FRONTEND_URL, "http://localhost:3000"])
+    app.secret_key = config.SECRET_KEY
 
     # Registrar callback para cerrar la BD al terminar cada request
     app.teardown_appcontext(close_db)
@@ -39,9 +40,19 @@ def create_app():
     app.register_blueprint(incidentes_bp, url_prefix="/incidentes")
     app.register_blueprint(notificaciones_bp, url_prefix="/notificaciones")
     app.register_blueprint(metodos_pago_bp, url_prefix="/metodos_pago")
+
+    # Health check endpoint
+    @app.route("/health")
+    def health():
+        return {"status": "ok"}, 200
+
     return app
 
+
+app = create_app()
+
 if __name__ == "__main__":
-    app = create_app()
     port = int(os.getenv("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    debug = os.getenv("FLASK_DEBUG", "false").lower() == "true"
+    app.run(host="0.0.0.0", port=port, debug=debug)
+

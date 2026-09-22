@@ -1,30 +1,22 @@
 from db import get_db
-from utils.verficar_metodo import transferir_fondos
+from utils.verificar_metodo import transferir_fondos
+
 
 def create_pago_min(id_asignacion: int, receptor_id: int, tipo_metodo_receptor: str):
-    """
-    Crea un nuevo registro en Pagos con solo id_asignacion y receptor_id.
-    """
+    """Crea un nuevo registro en Pagos con solo id_asignacion y receptor_id."""
     conn = get_db()
     cursor = conn.cursor()
-    sql = """
+    cursor.execute("""
         INSERT INTO Pagos (id_asignacion, receptor_id, tipo_metodo_receptor)
         VALUES (%s, %s, %s)
-    """
-    cursor.execute(sql, (id_asignacion, receptor_id, tipo_metodo_receptor))
-    conn.commit()
-    return cursor.lastrowid  # devuelve el id_pago creado
+        RETURNING id_pago
+    """, (id_asignacion, receptor_id, tipo_metodo_receptor))
+    return cursor.fetchone()["id_pago"]
 
 
-def update_pago_by_asignacion(
-    id_asignacion: int,
-    monto_total: float,
-    pagador_id: int,
-    tipo_metodo_pagador: str
-):
+def update_pago_by_asignacion(id_asignacion: int, monto_total: float, pagador_id: int, tipo_metodo_pagador: str):
     """
-    Completa los datos restantes de un Pago existente,
-    identificado por id_asignacion.
+    Completa los datos restantes de un Pago existente.
     Luego recupera la fila completa y transfiere fondos.
     """
     conn = get_db()
@@ -43,39 +35,27 @@ def update_pago_by_asignacion(
         valores.append(tipo_metodo_pagador)
 
     if not campos:
-        return False  # nada que actualizar
+        return False
 
-    sql = f"""
-        UPDATE Pagos
-        SET {', '.join(campos)}
-        WHERE id_asignacion = %s
-    """
+    sql = f"UPDATE Pagos SET {', '.join(campos)} WHERE id_asignacion = %s"
     valores.append(id_asignacion)
     cursor.execute(sql, tuple(valores))
-    conn.commit()
 
-    # obtener la fila actualizada
-    sql_select = """
-        SELECT *
-        FROM Pagos
-        WHERE id_asignacion = %s
-    """
-    cursor.execute(sql_select, (id_asignacion,))
+    # Obtener la fila actualizada
+    cursor.execute("SELECT * FROM Pagos WHERE id_asignacion = %s", (id_asignacion,))
     pago = cursor.fetchone()
 
     if not pago:
         raise ValueError("Pago no encontrado")
 
-    # ahora recuperar los id_metodo_externo
-    sql_metodos = """
+    # Recuperar los id_metodo_externo
+    cursor.execute("""
         SELECT id, id_metodo_externo
         FROM Metodos_Pago_Usuario
         WHERE id IN (%s, %s)
-    """
-    cursor.execute(sql_metodos, (pago['pagador_id'], pago['receptor_id']))
+    """, (pago['pagador_id'], pago['receptor_id']))
     metodos = cursor.fetchall()
-    print(metodos)
-    # asignar id_metodo_externo correspondiente
+
     id_metodo_externo_pagador = None
     id_metodo_externo_receptor = None
     for metodo in metodos:
@@ -87,26 +67,28 @@ def update_pago_by_asignacion(
     if id_metodo_externo_pagador is None or id_metodo_externo_receptor is None:
         raise ValueError("No se encontraron los métodos de pago externos requeridos")
 
-    # llamar la función de transferir fondos
-    transferir_fondos(
+    resultado = transferir_fondos(
         pago['tipo_metodo_pagador'],
         id_metodo_externo_pagador,
         pago['tipo_metodo_receptor'],
         id_metodo_externo_receptor,
         pago['monto_total']
     )
+    # transferir_fondos informa el resultado como texto; antes se ignoraba y un
+    # "Saldo insuficiente" dejaba el servicio como pagado.
+    exito = isinstance(resultado, str) and resultado.startswith("Transferencia de")
+    cursor.execute("UPDATE Pagos SET estado_pago = %s WHERE id_asignacion = %s",
+                   ('completado' if exito else 'fallido', id_asignacion))
+    if not exito:
+        raise ValueError(resultado or "No se pudo procesar el pago")
 
+    pago['estado_pago'] = 'completado'
     return pago
 
 
 def get_pago_by_asignacion(id_asignacion: int):
-    """
-    Recupera el registro de Pagos asociado a una asignación.
-    """
+    """Recupera el registro de Pagos asociado a una asignación."""
     conn = get_db()
-    cursor = conn.cursor()  # dictionary=True para obtener dicts
-    sql = "SELECT * FROM Pagos WHERE id_asignacion = %s"
-    cursor.execute(sql, (id_asignacion,))
-    return cursor.fetchone()  # devuelve un dict o None si no existe
-
-
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM Pagos WHERE id_asignacion = %s", (id_asignacion,))
+    return cursor.fetchone()

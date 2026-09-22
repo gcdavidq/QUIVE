@@ -1,34 +1,29 @@
 from db import get_db
-from flask import session
-from datetime import datetime, timedelta
+from api.transportistas.services import perfil_publico_transportista
 import json
 
-def post_tracking(data: dict):
+
+def post_tracking(data: dict, id_transportista: int):
     """
-    Insertar coordenadas en la tabla Seguimiento.
+    Inserta una posición GPS real en Seguimiento. Solo el transportista asignado
+    puede reportar, y solo mientras el traslado está en curso.
     """
-    # Verificar que el transportista tenga asignación activa
     conn = get_db()
     cursor = conn.cursor()
-    sql_check = """
+    cursor.execute("""
         SELECT estado FROM Asignaciones
         WHERE id_asignacion=%s AND id_transportista=%s
-    """
-    cursor.execute(sql_check, (data["id_asignacion"], session.get("usuario")["id_usuario"]))
+    """, (data["id_asignacion"], id_transportista))
     row = cursor.fetchone()
-    if not row or row["estado"] not in ("confirmado", "activo"):
-        return {"error": "Asignación no válida o no activa"}
+    if not row or row["estado"] != "activo":
+        return {"error": "Solo puedes reportar posición de un traslado tuyo que esté en curso"}
 
-    sql_insert = """
-        INSERT INTO Seguimiento (id_asignacion, ubicacion_actual, hora_ultima_actualizacion)
-        VALUES (%s, POINT(%s, %s), %s)
-    """
-    cursor.execute(sql_insert, (
-        data["id_asignacion"],
-        data["latitud"], data["longitud"],
-        data["hora_ultima_actualizacion"]
-    ))
+    cursor.execute("""
+        INSERT INTO Seguimiento (id_asignacion, latitud, longitud, hora_ultima_actualizacion)
+        VALUES (%s, %s, %s, NOW())
+    """, (data["id_asignacion"], data["latitud"], data["longitud"]))
     return {"msg": "Coordenadas registradas"}
+
 
 def get_ultimo_tracking(id_asignacion: int):
     """
@@ -36,82 +31,70 @@ def get_ultimo_tracking(id_asignacion: int):
     """
     conn = get_db()
     cursor = conn.cursor()
-    sql = """
-        SELECT ST_X(ubicacion_actual) AS latitud, ST_Y(ubicacion_actual) AS longitud, hora_ultima_actualizacion
+    cursor.execute("""
+        SELECT latitud, longitud, hora_ultima_actualizacion
         FROM Seguimiento
         WHERE id_asignacion=%s
         ORDER BY hora_ultima_actualizacion DESC
         LIMIT 1
-    """
-    cursor.execute(sql, (id_asignacion,))
+    """, (id_asignacion,))
     return cursor.fetchone()
 
-def get_ruta_tracking_s(user_id: int):
+
+def get_servicio_en_seguimiento(user_id: int, rol: str):
     """
-    Recupera los datos de la solicitud activa del usuario y calcula la ruta restante en tiempo real.
+    Servicio que el usuario puede seguir ahora: el traslado en curso ('activa') o, si no
+    hay ninguno, el próximo ya pagado ('confirmada'). Vale para ambos roles; la contraparte
+    devuelta es el transportista (para el cliente) o el cliente (para el transportista).
+
+    Toda la información sale de la base de datos. La posición del vehículo es la última
+    fila real de Seguimiento (None si el transportista aún no ha reportado GPS); ya no se
+    simula un avance a partir del reloj.
     """
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("CALL ObtenerSolicitudesConDetalle(%s, 'activa', Null)", (user_id,))
-    fila = cursor.fetchone()
 
-    if fila:
-        # Parsear timedelta a string
-        for key, value in fila.items():
-            if isinstance(value, timedelta):
-                fila[key] = str(value)
+    if rol == "transportista":
+        filtro, contraparte = "a.id_transportista = %s", "s.id_cliente"
+    else:
+        filtro, contraparte = "s.id_cliente = %s", "a.id_transportista"
 
-        # Convertir 'objetos' en JSON
-        if "objetos" in fila and isinstance(fila["objetos"], str):
-            try:
-                fila["objetos"] = json.loads(fila["objetos"])
-            except json.JSONDecodeError:
-                pass
+    cursor.execute(f"""
+        SELECT
+            s.id_solicitud, s.origen, s.destino, s.ruta, s.distancia, s.fecha_hora, s.estado,
+            a.id_asignacion, a.precio, a.id_transportista,
+            u.id_usuario AS contraparte_id,
+            u.nombre_completo AS contraparte_nombre,
+            u.telefono AS contraparte_telefono,
+            u.foto_perfil_url AS contraparte_foto
+        FROM Solicitudes s
+        JOIN Asignaciones a ON a.id_solicitud = s.id_solicitud
+                           AND a.estado IN ('confirmada', 'activo')
+        JOIN Usuarios u ON u.id_usuario = {contraparte}
+        WHERE {filtro} AND s.estado IN ('activa', 'confirmada')
+        ORDER BY (s.estado = 'activa') DESC, s.fecha_hora ASC
+        LIMIT 1
+    """, (user_id,))
+    servicio = cursor.fetchone()
+    if not servicio:
+        return None
 
-        # Calcular ruta actual en tiempo real
-        try:
-            fecha_hora = fila["fecha_hora"]
-            tiempo_total_horas = float(fila["tiempo_total_estimado_horas"])
-            tiempo_ruta_horas = float(fila["tiempo_solo_ruta"])
-            tiempo_antes_mudanza = tiempo_total_horas - tiempo_ruta_horas
+    servicio.update(perfil_publico_transportista(servicio["id_transportista"]))
 
-            # Convertir rutas a arrays
-            puntos_origen = json.loads(fila["ruta_transportista_origen"])
-            puntos_mudanza = json.loads(fila["ruta"])
+    # Inventario
+    cursor.execute("""
+        SELECT os.id_objeto, t.categoria, t.variante, os.cantidad
+        FROM Objetos_Solicitud os
+        JOIN Tipos_Objeto t ON os.id_tipo = t.id_tipo
+        WHERE os.id_solicitud = %s
+    """, (servicio["id_solicitud"],))
+    servicio["objetos"] = cursor.fetchall()
 
-            # Calcular tiempo actual
-            ahora = datetime.now()
-            inicio_viaje = fecha_hora - timedelta(minutes=tiempo_antes_mudanza)
-            minutos_transcurridos = (ahora - inicio_viaje).total_seconds() / 60
-            print(inicio_viaje)
-            print(ahora)
-            total_puntos_origen = len(puntos_origen)
-            total_puntos_mudanza = len(puntos_mudanza)
+    # Ruta planificada (polilínea guardada al crear la solicitud)
+    try:
+        servicio["ruta"] = json.loads(servicio["ruta"]) if servicio["ruta"] else []
+    except (TypeError, json.JSONDecodeError):
+        servicio["ruta"] = []
 
-            # Progreso en origen
-            puntos_recorridos_origen = 0
-            if tiempo_antes_mudanza > 0:
-                puntos_recorridos_origen = int(
-                    min(minutos_transcurridos, tiempo_antes_mudanza * 60) / (tiempo_antes_mudanza * 60) * total_puntos_origen
-                )
-                print(puntos_recorridos_origen)
-
-            # Progreso en mudanza
-            minutos_post_mudanza = minutos_transcurridos - (tiempo_antes_mudanza * 60)
-            puntos_recorridos_mudanza = 0
-            if tiempo_ruta_horas > 0 and minutos_post_mudanza > 0:
-                puntos_recorridos_mudanza = int(
-                    min(minutos_post_mudanza, tiempo_ruta_horas * 60) / (tiempo_ruta_horas * 60) * total_puntos_mudanza
-                )
-
-            # Recortar rutas
-            ruta_restante_origen = puntos_origen[puntos_recorridos_origen:] if puntos_origen else []
-            ruta_restante_mudanza = puntos_mudanza[puntos_recorridos_mudanza:] if puntos_mudanza else []
-            ruta_actual = ruta_restante_origen + ruta_restante_mudanza
-            fila["ruta_actual"] = ruta_actual
-
-        except Exception as e:
-            print(f"[Error calculando ruta actual]: {e}")
-            fila["ruta_actual"] = []
-
-    return fila
+    servicio["ultima_posicion"] = get_ultimo_tracking(servicio["id_asignacion"])
+    return servicio

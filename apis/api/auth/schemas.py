@@ -9,9 +9,10 @@ class RegisterSchema(Schema):
     contrasena = fields.String(required=False)
     tipo_usuario = fields.String(required=True, validate=validate.OneOf(["cliente", "transportista"]))
     ubicacion = fields.String(required=True)
-    foto_perfil_url = fields.String(required=True)
+    foto_perfil_url = fields.String(required=False, load_default='')
 
 class LoginSchema(Schema):
+    identificador = fields.String(required=False)
     dni = fields.String(required=False)
     email = fields.String(required=False)
     contrasena = fields.String(required=True)

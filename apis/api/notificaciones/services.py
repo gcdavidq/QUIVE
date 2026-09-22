@@ -29,10 +29,12 @@ def obtener_notificaciones(id_usuario: int, solo_no_leidas: bool = False):
     return cursor.fetchall()
 
 
-def marcar_como_leida(id_notificacion: int):
+def marcar_como_leida(id_notificacion: int, id_usuario: int) -> bool:
+    """Solo el destinatario puede marcar su notificación. False si no existe o no es suya."""
     conn = get_db()
     cursor = conn.cursor()
 
-    sql = "UPDATE Notificaciones SET leido = TRUE WHERE id_notificacion = %s"
-    cursor.execute(sql, (id_notificacion,))
+    sql = "UPDATE Notificaciones SET leido = TRUE WHERE id_notificacion = %s AND id_usuario = %s"
+    cursor.execute(sql, (id_notificacion, id_usuario))
     conn.commit()
+    return cursor.rowcount > 0

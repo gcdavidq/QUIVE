@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { User, Camera } from 'lucide-react';
 
 const SubirImagen = ({
   defaultPreview,
@@ -16,40 +17,28 @@ const SubirImagen = ({
   const handleChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      setPreview(url);
+      setPreview(URL.createObjectURL(file));
       onFotoSeleccionada(file);
     }
   };
 
+  const clases = imgClassName || "w-28 h-28 rounded-2xl object-cover";
+
+  // Sin foto se muestra un marcador neutro, no una imagen externa de otra persona.
+  const imagen = preview ? (
+    <img src={preview} alt="Foto de perfil" className={clases} onError={() => setPreview(null)} />
+  ) : (
+    <div className={`${clases} stat-blue flex items-center justify-center`}>
+      {editable ? <Camera size={28} /> : <User size={28} />}
+    </div>
+  );
+
+  if (!editable) return imagen;
+
   return (
-    <div className="flex justify-center mb-6">
-      <div className="relative">
-        {editable ? (
-          <>
-            <label htmlFor={id_imagen} className="cursor-pointer">
-              <img
-                src={preview || "https://www.w3schools.com/howto/img_avatar.png"}
-                alt="Foto de perfil"
-                className={imgClassName || "w-28 h-28 rounded-full object-cover"}
-              />
-            </label>
-            <input
-              id={id_imagen}
-              type="file"
-              accept="image/*"
-              onChange={handleChange}
-              className="hidden"
-            />
-          </>
-        ) : (
-          <img
-            src={preview || "https://www.w3schools.com/howto/img_avatar.png"}
-            alt={id_imagen}
-            className={imgClassName || "w-28 h-28 rounded-full object-cover"}
-          />
-        )}
-      </div>
+    <div className="flex justify-center">
+      <label htmlFor={id_imagen} className="cursor-pointer">{imagen}</label>
+      <input id={id_imagen} type="file" accept="image/*" onChange={handleChange} className="hidden" />
     </div>
   );
 };

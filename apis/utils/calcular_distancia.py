@@ -1,3 +1,4 @@
+import os
 import openrouteservice
 from openrouteservice import convert
 
@@ -16,7 +17,8 @@ def calcular_ruta_ors(origen_txt, destino_txt, ubicacion_transportista_txt):
     trans_coords = extraer_coordenadas(ubicacion_transportista_txt)
 
     # Cliente ORS
-    client = openrouteservice.Client(key="5b3ce3597851110001cf6248586c45473a8042fbbe48c152e2539778")
+    ors_key = os.getenv("ORS_API_KEY", "5b3ce3597851110001cf6248586c45473a8042fbbe48c152e2539778")
+    client = openrouteservice.Client(key=ors_key)
 
     resultados = {}
     try:

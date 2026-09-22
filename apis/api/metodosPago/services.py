@@ -1,7 +1,33 @@
 from db import get_db
-from utils.verficar_metodo import (
-    obtener_id_metodo_pago,
-    obtener_detalle_metodo_externo)
+from utils.verificar_metodo import (
+    obtener_o_crear_metodo_simulado,
+    obtener_detalle_metodo_externo
+)
+
+def _detalle_publico(tipo: str, detalle: dict) -> dict:
+    """
+    Lo único que la UI necesita para identificar un método. Nunca salen del backend
+    el número completo, el CVV ni la contraseña de PayPal.
+    """
+    if not detalle:
+        return {}
+    publico = {
+        "titular": detalle.get("titular"),
+        "activo": detalle.get("activo"),
+        # Saldo FICTICIO de la pasarela simulada; solo lo ve su dueño.
+        "saldo_simulado": float(detalle["saldo"]) if detalle.get("saldo") is not None else None,
+    }
+    tipo = (tipo or "").lower()
+    if tipo == "tarjeta":
+        numero = str(detalle.get("numero") or "")
+        publico["ultimos4"] = numero[-4:]
+        publico["vencimiento"] = detalle.get("vencimiento")
+    elif tipo == "yape":
+        publico["codigo"] = detalle.get("codigo")
+    elif tipo == "paypal":
+        publico["correo"] = detalle.get("correo")
+    return publico
+
 
 def listar_metodos_pago_usuario(usuario_id):
     conn = get_db()
@@ -18,53 +44,59 @@ def listar_metodos_pago_usuario(usuario_id):
         resultado.append({
             "id": metodo["id"],
             "tipo": metodo["tipo_metodo"],
-            "detalle": detalle or {}
+            "detalle": _detalle_publico(metodo["tipo_metodo"], detalle)
         })
 
     return resultado
 
+
 def registrar_metodo_pago_usuario(usuario_id, tipo, datos):
-    id_metodo = obtener_id_metodo_pago(tipo, datos)
-    if not id_metodo:
-        return f"El método de pago de tipo {tipo} no es válido o no está activo"
+    """Devuelve (ok, mensaje)."""
+    id_metodo, error = obtener_o_crear_metodo_simulado(tipo, datos, usuario_id)
+    if error:
+        return False, error
 
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT * FROM Metodos_Pago_Usuario
+        SELECT 1 FROM Metodos_Pago_Usuario
         WHERE usuario_id = %s AND tipo_metodo = %s AND id_metodo_externo = %s
     """, (usuario_id, tipo, id_metodo))
     if cursor.fetchone():
-        return "El método de pago ya está registrado para este usuario"
+        return False, "El método de pago ya está registrado para este usuario"
 
     cursor.execute("""
         INSERT INTO Metodos_Pago_Usuario (usuario_id, tipo_metodo, id_metodo_externo)
         VALUES (%s, %s, %s)
     """, (usuario_id, tipo, id_metodo))
-    return "Método de pago registrado correctamente"
+    return True, "Método de pago registrado correctamente"
 
-def actualizar_metodo_pago_usuario(id_metodo_usuario, tipo, datos):
-    id_metodo_nuevo = obtener_id_metodo_pago(tipo, datos)
-    if not id_metodo_nuevo:
-        return f"El nuevo método de pago no es válido o no está activo"
+
+def actualizar_metodo_pago_usuario(id_metodo_usuario, usuario_id, tipo, datos):
+    """Solo el dueño puede actualizar su método. Devuelve (ok, mensaje)."""
+    id_metodo_nuevo, error = obtener_o_crear_metodo_simulado(tipo, datos, usuario_id)
+    if error:
+        return False, error
 
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""
         UPDATE Metodos_Pago_Usuario
         SET tipo_metodo = %s, id_metodo_externo = %s
-        WHERE id = %s
-    """, (tipo, id_metodo_nuevo, id_metodo_usuario))
+        WHERE id = %s AND usuario_id = %s
+    """, (tipo, id_metodo_nuevo, id_metodo_usuario, usuario_id))
     if cursor.rowcount == 0:
-        return "No se encontró el método a actualizar"
-    return "Método de pago actualizado correctamente"
+        return False, "No se encontró el método a actualizar"
+    return True, "Método de pago actualizado correctamente"
 
-def eliminar_metodo_pago_usuario(id_metodo_usuario):
+
+def eliminar_metodo_pago_usuario(id_metodo_usuario, usuario_id):
+    """Solo el dueño puede eliminar su método. Devuelve (ok, mensaje)."""
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""
-        DELETE FROM Metodos_Pago_Usuario WHERE id = %s
-    """, (id_metodo_usuario,))
+        DELETE FROM Metodos_Pago_Usuario WHERE id = %s AND usuario_id = %s
+    """, (id_metodo_usuario, usuario_id))
     if cursor.rowcount == 0:
-        return "No se encontró el método a eliminar"
-    return "Método de pago eliminado correctamente"
+        return False, "No se encontró el método a eliminar"
+    return True, "Método de pago eliminado correctamente"

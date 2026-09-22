@@ -6,7 +6,7 @@ import AddressMap from "./AddressMap";
 import useUbicacionDesdeExcel from "./distrito";
 
 // SVG inline de pin (color rojo suave) para el botón
-const PinIcon = ({ size = 16, color = "#d9534f" }) => (
+const PinIcon = ({ size = 16, color = "#4d93f5" }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -228,7 +228,7 @@ const UbicacionPeru = ({ direccion, setUbicacion }) => {
 
   const resumenUbicacion = tieneUbicacion 
     ? `${direccion.tipoVia} ${direccion.nombreVia} ${direccion.numero}, ${direccion.distrito}, ${direccion.provincia}, ${direccion.departamento}, Peru`
-    : "Seleccione su ubicación";
+    : "Seleccionar dirección en el mapa";
   return (
     <div>
       {/* Botón que abre el modal */}
@@ -241,7 +241,7 @@ const UbicacionPeru = ({ direccion, setUbicacion }) => {
           <div className="ubicacion-button-icon">
             <PinIcon />
           </div>
-          <span className="ubicacion-button-text">📍 {resumenUbicacion}</span>
+          <span className="ubicacion-button-text">{resumenUbicacion}</span>
         </div>
       </button>
 

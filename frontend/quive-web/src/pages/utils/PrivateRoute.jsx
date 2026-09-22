@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 
 const PrivateRoute = ({ userData, children }) => {
-  if (!userData || !userData.email) {
+  if (!userData?.token || !userData?.id_usuario) {
     return <Navigate to="/login" replace />;
   }
   return children;

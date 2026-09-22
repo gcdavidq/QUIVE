@@ -51,10 +51,12 @@ const AddressForm = ({
     control: (provided, state) => ({
       ...provided,
       border: `1px solid var(--border-color)`,
-      borderRadius: '6px',
-      backgroundColor: 'var(--bg-primary)',
+      borderRadius: '12px',
+      backgroundColor: 'var(--card-bg)',
       minHeight: '42px',
-      boxShadow: state.isFocused ? '0 0 0 2px rgba(13, 110, 253, 0.1)' : 'none',
+      fontSize: '12px',
+      borderColor: state.isFocused ? '#4d93f5' : 'var(--border-color)',
+      boxShadow: 'none',
       '&:hover': {
         borderColor: 'var(--button-bg)'
       }
@@ -73,9 +75,11 @@ const AddressForm = ({
     }),
     menu: (provided) => ({
       ...provided,
-      backgroundColor: 'var(--bg-primary)',
+      backgroundColor: 'var(--card-bg)',
       border: '1px solid var(--border-color)',
-      borderRadius: '6px',
+      borderRadius: '12px',
+      fontSize: '12px',
+      overflow: 'hidden',
       boxShadow: '0 4px 12px var(--shadow)',
       zIndex: 9999
     }),
@@ -214,7 +218,7 @@ const AddressForm = ({
                 lng: undefined,
               })
             }
-            placeholder="Ej. Primavera"
+            placeholder="Nombre de la vía"
             disabled={!direccion.tipoVia}
           />
         </div>
@@ -234,7 +238,7 @@ const AddressForm = ({
                 lng: undefined,
               })
             }
-            placeholder="Ej. 123"
+            placeholder="Número"
             disabled={!direccion.nombreVia}
           />
         </div>

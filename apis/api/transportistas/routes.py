@@ -1,4 +1,5 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify
+from utils.auth import requiere_auth, id_actual, rol_actual, es_propio, prohibido, rol_en_solicitud, rol_en_asignacion
 from api.transportistas.services import (
     upload_or_update_my_documentos,
     get_documentos_by_id,
@@ -15,11 +16,14 @@ import concurrent.futures
 transportistas_bp = Blueprint("transportistas_bp", __name__)
 
 @transportistas_bp.route("/me/documentos", methods=["POST"])
+@requiere_auth("transportista")
 def post_me_documentos():
     schema = DocumentosSchema()
-    licencia = request.files['licencia_conducir_url']
-    tarjeta = request.files['tarjeta_propiedad_url']
-    certificado = request.files['certificado_itv_url']
+    licencia = request.files.get('licencia_conducir_url')
+    tarjeta = request.files.get('tarjeta_propiedad_url')
+    certificado = request.files.get('certificado_itv_url')
+    if not (licencia and tarjeta and certificado):
+        return jsonify({"msg": "Debes adjuntar licencia, tarjeta de propiedad y certificado ITV."}), 400
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = {
             "licencia_conducir_url": executor.submit(subir_a_dropbox, licencia, f"/{licencia.filename}"),
@@ -30,7 +34,8 @@ def post_me_documentos():
     try:
         if not payload:
             return jsonify({"msg": "No se subió ningún documento válido."}), 400
-        payload['id_usuario'] = request.form.get('id_usuario')
+        # Los documentos siempre se registran a nombre del transportista autenticado.
+        payload['id_usuario'] = str(id_actual())
         data = schema.load(payload)
     except ValidationError as err:
         return jsonify({"errors": err.messages}), 400
@@ -42,8 +47,11 @@ def post_me_documentos():
 
 
 @transportistas_bp.route("/<int:id_usuario>/documentos", methods=["GET"])
+@requiere_auth("transportista", "admin")
 def get_by_id_documentos(id_usuario):
     # Admin o propio transportista
+    if rol_actual() != "admin" and not es_propio(id_usuario):
+        return prohibido()
     documentos = get_documentos_by_id(id_usuario)
     if not documentos:
         return jsonify({"msg": "No existen documentos para ese usuario"}), 404
@@ -51,16 +59,22 @@ def get_by_id_documentos(id_usuario):
 
 
 @transportistas_bp.route("<int:id_solicitud>/<string:cantidad>", methods=["GET"])
+@requiere_auth("cliente")
 def get_transportistas(id_solicitud, cantidad):
-    # En este ejemplo ignoramos los filtros y devolvemos todos los verificados
+    if rol_en_solicitud(id_solicitud) != "cliente":
+        return prohibido("Solo puedes cotizar transportistas para tus propias solicitudes")
     resultado = list_transportistas_verified(id_solicitud)
-    if cantidad=="unico":
+    if cantidad == "unico":
+        if not resultado:
+            return jsonify({"msg": "No hay transportistas disponibles para esta solicitud"}), 404
         return jsonify(resultado[0]), 200
-    elif cantidad=="all":
+    elif cantidad == "all":
         return jsonify(resultado), 200
+    return jsonify({"msg": "Parámetro no válido"}), 400
 #<------------------------Tarifas------------------------------->
 
 @transportistas_bp.route("/me/tarifa", methods=["POST"])
+@requiere_auth("transportista")
 def post_tarifa():
     payload = request.get_json()
     schema = TarifaSchema()
@@ -69,10 +83,14 @@ def post_tarifa():
     except ValidationError as err:
         return jsonify({"errors": err.messages}), 400
 
+    data['id_transportista'] = id_actual()
     resultado = create_tarifa(data)
+    if "error" in resultado:
+        return jsonify({"msg": resultado["error"]}), 400
     return jsonify(resultado), 201
 
 @transportistas_bp.route("/me/tarifa/<int:id_transportista>", methods=["PUT"])
+@requiere_auth("transportista")
 def put_tarifa(id_transportista):
     payload = request.get_json()
     schema = TarifaSchema()
@@ -80,12 +98,17 @@ def put_tarifa(id_transportista):
         data = schema.load(payload)
     except ValidationError as err:
         return jsonify({"errors": err.messages}), 400
-    data['id_transportista']= id_transportista
+    if not es_propio(id_transportista):
+        return prohibido()
+    data['id_transportista'] = id_actual()
     resultado = update_tarifa(data)
-    return jsonify(resultado), 201
+    if "error" in resultado:
+        return jsonify({"msg": resultado["error"]}), 400
+    return jsonify(resultado), 200
 
 
 @transportistas_bp.route("/<int:id_usuario>/tarifa", methods=["GET"])
+@requiere_auth()
 def get_tarifa_by_id(id_usuario):
     resultado = get_tarifa_by_transportista(id_usuario)
     if not resultado:

@@ -14,4 +14,4 @@ class AddObjetoASolicitudSchema(Schema):
     id_tipo = fields.Integer(required=True)
     cantidad = fields.Integer(required=True, validate=validate.Range(min=1))
     observaciones = fields.String(required=False, allow_none=True)
-    imagen_url = fields.Url(required=False)
+    imagen_url = fields.Url(required=False, allow_none=True)

@@ -1,29 +1,27 @@
-import { useEffect, useRef } from "react";
-import { Loader2 } from "lucide-react";
-import API_URL from "../../api"; // Asegúrate de que esta ruta sea correcta
+import React, { useEffect, useRef } from "react";
+import { Loader2, X } from "lucide-react";
+import API_URL, { apiFetch } from "../../api";
+import { formatoSoles } from "../../utils/estadoServicio";
 
 const WaitingScreen = ({ onCancelar, actualizarFormData, formData, userData, nextStep }) => {
   const pollingRef = useRef(null);
 
   useEffect(() => {
-    if (!formData.asignacion?.id_asignacion) return;
+    if (!formData?.asignacion?.id_asignacion) return;
 
     const id_asignacion = formData.asignacion.id_asignacion;
 
-    console.log("Asignación detectada, iniciando monitoreo:", id_asignacion);
     const iniciarMonitoreo = () => {
-      console.log("Iniciando monitoreo de asignación:", id_asignacion);
       pollingRef.current = setInterval(async () => {
         try {
-          const response = await fetch(
+          const response = await apiFetch(
             `${API_URL}/asignaciones/${id_asignacion}/estado`
           );
-          const miAsignacion = await response.json(); // Ya es un objeto, no lista
+          const miAsignacion = await response.json();
 
           if (!miAsignacion) return;
 
           const estado = miAsignacion.estado;
-          console.log("Estado actual de la asignación:", estado);
 
           if (estado !== "pendiente") {
             clearInterval(pollingRef.current);
@@ -31,7 +29,7 @@ const WaitingScreen = ({ onCancelar, actualizarFormData, formData, userData, nex
 
           if (estado === "rechazada") {
             actualizarFormData({ conductor: null, asignacion: null });
-            onCancelar();
+            if (onCancelar) onCancelar();
           }
 
           if (estado === "confirmada") {
@@ -41,12 +39,12 @@ const WaitingScreen = ({ onCancelar, actualizarFormData, formData, userData, nex
                 estado: "confirmada",
               },
             });
-            nextStep();
+            if (nextStep) nextStep();
           }
         } catch (err) {
           console.error("Error al consultar asignación:", err);
         }
-      }, 5000);
+      }, 4000);
     };
 
     iniciarMonitoreo();
@@ -56,23 +54,37 @@ const WaitingScreen = ({ onCancelar, actualizarFormData, formData, userData, nex
         clearInterval(pollingRef.current);
       }
     };
-  }, [formData.asignacion, actualizarFormData, onCancelar, userData.tipo_usuario, nextStep]);
+  }, [formData?.asignacion, actualizarFormData, onCancelar, userData?.tipo_usuario, nextStep]);
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center z-50 bg-black/30 backdrop-blur-sm">
-      <div className="theme-card p-8 rounded-2xl shadow-xl text-center space-y-4 max-w-md w-full">
-        <Loader2 className="w-16 h-16 animate-spin text-blue-600 mx-auto" />
-        <h2 className="text-2xl font-semibold theme-text-primary">
-          Enviando solicitud...
-        </h2>
-        <p className="theme-text-secondary">
-          Por favor espera mientras el conductor acepta o rechaza la solicitud.
-        </p>
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-[#0c1f36]/50 backdrop-blur-sm p-4">
+      <div className="surface-card p-8 sm:p-10 rounded-3xl shadow-2xl text-center space-y-4 max-w-md w-full border border-blue-200 dark:border-blue-900/60 animate-in fade-in zoom-in-95 duration-200">
+        <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-[#4d93f5] flex items-center justify-center mx-auto shadow-inner">
+          <Loader2 className="w-8 h-8 animate-spin" />
+        </div>
+        <div>
+          <span className="section-kicker">COMUNICANDO CON EL CONDUCTOR</span>
+          <h2 className="font-display text-xl font-extrabold text-[#16365f] dark:text-white mt-1">
+            Enviando Solicitud...
+          </h2>
+          <p className="text-xs text-[#8da3bd] mt-1.5 leading-relaxed">
+            Estamos notificando a {formData?.conductor?.nombre || 'tu transportista seleccionado'} para que acepte o rechace la solicitud.
+          </p>
+        </div>
+
+        <div className="p-3 rounded-xl border border-[var(--color-border)] bg-[#fbfdff] dark:bg-[#112136] text-xs flex items-center justify-between">
+          <span className="text-[#8da3bd]">Tarifa a pagar:</span>
+          <span className="font-display font-extrabold text-base text-[#16365f] dark:text-white">
+            {formatoSoles(formData?.conductor?.precio)}
+          </span>
+        </div>
+
         <button
           onClick={onCancelar}
-          className="btn-delete bg-red-500 text-white font-medium px-6 py-2 rounded-lg hover:bg-red-600 transition"
+          className="w-full py-3 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 pt-2"
         >
-          Cancelar transportista
+          <X size={15} />
+          <span>Cancelar y Elegir Otro Conductor</span>
         </button>
       </div>
     </div>

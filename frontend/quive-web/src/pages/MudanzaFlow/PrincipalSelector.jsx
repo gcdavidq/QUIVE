@@ -1,7 +1,7 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import ListaConductores from './ListaConductores';
 import WaitingScreen from './WaitingScreen';
-import API_URL from '../../api'; 
+import API_URL, { apiFetch } from '../../api'; 
 
 const PrincipalSelector = ({ formData, seleccionarConductor, nextStep, actualizarFormData, prevStep, userData, handleCancelar }) => {
   const asignacionEnviada = useRef(false);
@@ -10,15 +10,14 @@ const PrincipalSelector = ({ formData, seleccionarConductor, nextStep, actualiza
 
     asignacionEnviada.current = true;
 
-    console.log("Creando asignación con datos:", formData);
     try {
       const bodyAsignacion = {
         id_solicitud: formData.id_solicitud,
         id_transportista: formData.conductor.id_transportista,
-        precio: formData.conductor.precio,
+        // El precio lo fija el servidor a partir de la tarifa del transportista.
       };
 
-      const response = await fetch(`${API_URL}/asignaciones`, {
+      const response = await apiFetch(`${API_URL}/asignaciones`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -29,10 +28,10 @@ const PrincipalSelector = ({ formData, seleccionarConductor, nextStep, actualiza
       if (!response.ok) throw new Error("Error al crear la asignación");
 
       const resultado = await response.json();
-      console.log("Asignación creada con éxito:", resultado);
 
       if (actualizarFormData && resultado.id_asignacion) {
         actualizarFormData({
+          conductor: { ...formData.conductor, precio: resultado.precio },
           asignacion: {
             id_asignacion: resultado.id_asignacion,
             estado: resultado.estado,
@@ -41,14 +40,18 @@ const PrincipalSelector = ({ formData, seleccionarConductor, nextStep, actualiza
       }
     } catch (error) {
       console.error("Error en la solicitud de asignación:", error);
+      asignacionEnviada.current = false;
       alert("Hubo un error al crear la asignación.");
       handleCancelar();
     }
   };
 
-if (formData.conductor && !formData.asignacion?.id_asignacion) {
+  useEffect(() => {
+    if (formData.conductor && !formData.asignacion?.id_asignacion) {
       crearAsignacion();
-    };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.conductor, formData.asignacion?.id_asignacion]);
 
   return (
     <>

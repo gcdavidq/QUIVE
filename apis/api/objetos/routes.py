@@ -9,6 +9,7 @@ from api.objetos.services import (
 from api.objetos.schemas import TipoObjetoSchema, AddObjetoASolicitudSchema
 from utils.quickstart import subir_a_dropbox
 from marshmallow import ValidationError
+from utils.auth import requiere_auth, id_actual, rol_actual, es_propio, prohibido, rol_en_solicitud, rol_en_asignacion
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 objetos_bp = Blueprint("objetos_bp", __name__)
@@ -20,8 +21,8 @@ def get_tipos_objeto():
     return jsonify(tipos), 200
 
 @objetos_bp.route("/tipos-objeto", methods=["POST"])
+@requiere_auth("admin")
 def post_tipo_objeto():
-    # Admin
     payload = request.get_json()
     schema = TipoObjetoSchema()
     try:
@@ -36,12 +37,18 @@ def post_tipo_objeto():
 
 # --- Objetos dentro de una Solicitud ---
 @objetos_bp.route("/<int:id_solicitud>/objetos", methods=["GET"])
+@requiere_auth("cliente", "transportista")
 def get_objetos_solicitud(id_solicitud):
+    if rol_en_solicitud(id_solicitud) is None:
+        return prohibido()
     objetos = list_objetos_de_solicitud(id_solicitud)
     return jsonify(objetos), 200
 
 @objetos_bp.route("/<int:id_solicitud>/objetos", methods=["POST"])
+@requiere_auth("cliente")
 def post_objetos_solicitud(id_solicitud):
+    if rol_en_solicitud(id_solicitud) != "cliente":
+        return prohibido()
     payload = []
     i = 0
     # Paso 1: recolectar los datos primero (sin subir aún)
@@ -69,7 +76,7 @@ def post_objetos_solicitud(id_solicitud):
         return {
             "id_tipo": obj["id_tipo"],
             "cantidad": obj["cantidad"],
-            "imagen_url": obj["imagen_url"],
+            "imagen_url": obj["imagen_url"] or None,
         }
 
     # Paso 3: ejecutar en paralelo
@@ -89,22 +96,3 @@ def post_objetos_solicitud(id_solicitud):
         return jsonify({"msg": nuevo["error"]}), 400
 
     return jsonify(nuevo), 201
-
-@objetos_bp.route("/<int:id_solicitud>/objetos/<int:id_objeto>", methods=["PUT"])
-def put_objeto_solicitud(id_solicitud, id_objeto):
-    payload = request.get_json()
-    schema = AddObjetoASolicitudSchema(partial=True)
-    try:
-        data = schema.load(payload)
-    except ValidationError as err:
-        return jsonify({"errors": err.messages}), 400
-
-    updated = update_objeto_de_solicitud(id_solicitud, id_objeto, data)
-    if "error" in updated:
-        return jsonify({"msg": updated["error"]}), 400
-    return jsonify(updated), 200
-
-@objetos_bp.route("/<int:id_solicitud>/objetos/<int:id_objeto>", methods=["DELETE"])
-def delete_objeto_solicitud(id_solicitud, id_objeto):
-    resultado = delete_objeto_de_solicitud(id_solicitud, id_objeto)
-    return jsonify(resultado), 200

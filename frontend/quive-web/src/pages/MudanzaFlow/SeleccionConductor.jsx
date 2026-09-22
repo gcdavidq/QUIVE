@@ -1,150 +1,82 @@
 import React, { useEffect, useState } from "react";
-import { Star } from 'lucide-react';
-import API_URL from '../../api'; // Asegúrate de que esta ruta sea correcta
+import { Truck, ArrowRight, RefreshCw, UserCheck, Users } from 'lucide-react';
+import API_URL, { apiFetch } from '../../api';
+import { conductorDesdeCandidato } from './conductor';
+import ConductorCard from './ConductorCard';
 
 const SeleccionConductor = ({ nextStep, seleccionarConductor, formData }) => {
   const [conductorRecomendado, setConductorRecomendado] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     const fetchConductor = async () => {
       try {
-        const response = await fetch(`${API_URL}/transportistas/${formData.id_solicitud}/unico`);
-        const data = await response.json();
-        setConductorRecomendado({
-          id_transportista: data.id_transportista,
-          nombre: data.nombre_completo,
-          foto: data.foto_perfil_url,
-          puntaje: data.promedio_calificaciones,
-          rating: parseFloat(data.promedio_calificaciones).toFixed(1),
-          reviews: data.cantidad_calificaciones,
-          distancia: `${(formData.distancia / 1000).toFixed(1)} km`, // metros a km
-          tiempo: data.tiempo_estimado_horas * 60 > 60
-          ? `${Math.floor(data.tiempo_estimado_horas)} h ${(data.tiempo_estimado_horas * 60 % 60).toFixed(0)} min`
-          : `${(data.tiempo_estimado_horas * 60).toFixed(0)} min`,
-          vehiculo: data.nombre_vehiculo, // Requiere más datos si quieres el nombre real
-          capacidad: `${data.capacidad_volumen} m³`, // Si quieres volumen, necesitas consultar
-          viajes: data.viajes_realizados, // Este valor deberías obtenerlo aparte
-          precio: parseFloat(data.precio_estimado_total).toFixed(2)
-        });
+        setLoading(true);
+        const response = await apiFetch(`${API_URL}/transportistas/${formData.id_solicitud}/unico`);
+        const data = response.ok ? await response.json() : null;
+        setConductorRecomendado(data?.id_transportista ? conductorDesdeCandidato(data) : null);
       } catch (error) {
         console.error("Error al obtener el conductor:", error);
+        setConductorRecomendado(null);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchConductor();
-  }, [formData]);
-  // Renderiza algo mientras se carga
-  if (!conductorRecomendado) return <p>Cargando conductor recomendado...</p>;
+  }, [formData.id_solicitud]);
 
+  if (loading) {
+    return (
+      <div className="surface-card p-12 text-center rounded-2xl max-w-xl mx-auto my-8">
+        <RefreshCw className="animate-spin text-[#4d93f5] mx-auto mb-3" size={32} />
+        <h3 className="font-display text-base font-bold text-[#16365f] dark:text-white">Buscando transportistas para tu solicitud...</h3>
+      </div>
+    );
+  }
+
+  if (!conductorRecomendado) {
+    return (
+      <div className="surface-card p-10 text-center rounded-2xl max-w-xl mx-auto my-8">
+        <Truck className="w-12 h-12 text-[#8da3bd] mx-auto mb-3 opacity-50" />
+        <span className="section-kicker">PASO 3 DE 5 · TRANSPORTISTA</span>
+        <h3 className="font-display text-lg font-bold text-[#16365f] dark:text-white mt-1">
+          No hay transportistas disponibles para esta solicitud
+        </h3>
+        <p className="text-xs text-[#8da3bd] max-w-md mx-auto mt-1">
+          Ningún transportista activo con tarifa registrada cubre esta ruta por ahora. Tu solicitud queda guardada; puedes volver a intentarlo más tarde.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* COLUMNA IZQUIERDA */}
-        <div>
-          <h3 className="text-xl font-bold theme-text-primary mb-4">
-            ¿No te convence el conductor que te asignamos?
-          </h3>
-          <p className="theme-text-secondary mb-6">
-            Puedes seleccionar un conductor tú mismo.
-          </p>
+    <div className="max-w-4xl mx-auto space-y-6">
+      <div className="surface-card p-6 sm:p-8 rounded-2xl">
+        <span className="section-kicker">PASO 3 DE 5 · TRANSPORTISTA</span>
+        <h2 className="font-display text-2xl font-extrabold text-[#16365f] dark:text-white mt-1">Transportista sugerido</h2>
+        <p className="text-xs text-[#8da3bd] mt-1 mb-6">
+          Es el candidato con mejor puntaje para tu solicitud, combinando sus calificaciones, sus incidentes reportados y su tarifa para esta ruta.
+        </p>
 
-          <button
-            onClick={() => nextStep()}
-            className="bg-orange-500 text-white px-8 py-3 rounded-lg font-medium hover:bg-orange-600 transition-colors"
-          >
-            BUSCAR MANUALMENTE
+        <ConductorCard conductor={conductorRecomendado} destacado />
+
+        <div className="flex flex-col sm:flex-row gap-3 mt-6">
+          <button onClick={() => nextStep()} className="secondary-button flex-1 justify-center !py-3">
+            <Users size={15} />
+            <span>Ver todos los transportistas</span>
           </button>
-        </div>
-
-        {/* COLUMNA DERECHA: CONDUCTOR RECOMENDADO */}
-        <div className="theme-card p-6">
-          <h3 className="text-lg font-bold text-blue-600 mb-4 text-center">
-            CONDUCTOR RECOMENDADO
-          </h3>
-
-          <div className="text-center mb-6">
-            <div className="w-24 h-24 bg-blue-100 rounded-lg mx-auto mb-4 flex items-center justify-center">
-              <img
-                src={conductorRecomendado.foto}
-                alt="Avatar"
-                className="w-16 h-16 object-cover rounded-full"
-              />
-            </div>
-
-            <h4 className="text-xl font-bold theme-text-primary mb-2">
-              {conductorRecomendado.nombre}
-            </h4>
-
-            <div className="flex items-center justify-center mb-2">
-              {[1, 2, 3, 4, 5].map((star) => {
-                const fillPercentage = Math.min(Math.max(conductorRecomendado.rating - star + 1, 0), 1) * 100;
-                return (
-                  <div key={star} className="relative w-4 h-4">
-                    <Star className="w-4 h-4 text-gray-300" />
-                    <div
-                      className="absolute top-0 left-0 h-full overflow-hidden"
-                      style={{ width: `${fillPercentage}%` }}
-                    >
-                      <Star className="w-4 h-4 text-yellow-400" />
-                    </div>
-                  </div>
-                );
-              })}
-              <span className="ml-2 text-sm theme-text-secondary">
-                ({conductorRecomendado.reviews})
-              </span>
-            </div>
-
-            <div className="flex space-x-4 text-sm theme-text-secondary mb-4">
-              <span className="bg-blue-100 px-2 py-1 rounded">
-                {conductorRecomendado.distancia} de distancia
-              </span>
-              <span className="bg-green-100 px-2 py-1 rounded">
-                Llega en {conductorRecomendado.tiempo}
-              </span>
-            </div>
-          </div>
-
-          <div className="space-y-3 mb-6">
-            <div className="flex justify-between">
-              <span className="theme-text-secondary">Modelo Camión:</span>
-              <span className="font-medium theme-text-primary">
-                {conductorRecomendado.vehiculo}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="theme-text-secondary">Capacidad:</span>
-              <span className="font-medium theme-text-primary">
-                {conductorRecomendado.capacidad}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="theme-text-secondary">Viajes realizados:</span>
-              <span className="font-medium theme-text-primary">
-                {conductorRecomendado.viajes}
-              </span>
-            </div>
-          </div>
-
-          <div className="text-center mb-6">
-            <span className="text-3xl font-bold text-green-600">
-              S/ {conductorRecomendado.precio}
-            </span>
-          </div>
-
           <button
-            onClick={() => {
-              seleccionarConductor(conductorRecomendado);
-              nextStep();
-            }}
-            className="btn-secondary w-full py-3 rounded-lg"
+            onClick={() => { seleccionarConductor(conductorRecomendado); nextStep(); }}
+            className="primary-button flex-1 justify-center !py-3"
           >
-            Confirmar Conductor
+            <UserCheck size={16} />
+            <span>Enviar solicitud a este transportista</span>
+            <ArrowRight size={14} />
           </button>
         </div>
       </div>
     </div>
-
   );
 };
 

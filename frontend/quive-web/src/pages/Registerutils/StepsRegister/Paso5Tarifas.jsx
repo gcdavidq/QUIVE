@@ -1,103 +1,47 @@
 import React from 'react';
+import { ArrowRight } from 'lucide-react';
+import PasoRegistro from './PasoRegistro';
 
+const CAMPOS = [
+  { name: 'precio_por_km', label: 'Precio por km (S/)', obligatorio: true },
+  { name: 'precio_por_m3', label: 'Precio por m³ (S/)', obligatorio: true },
+  { name: 'precio_por_kg', label: 'Precio por kg (S/)', obligatorio: true },
+  { name: 'recargo_fragil', label: 'Recargo por objeto frágil (S/)' },
+  { name: 'recargo_embalaje', label: 'Recargo por embalaje (S/)' },
+];
+
+// Paso exclusivo del TRANSPORTISTA.
 const Paso5Tarifas = ({ tarifas, setTarifas, setCurrentStep }) => {
   const handleInputChange = (e) => {
     let { name, value } = e.target;
-    if (value.startsWith('.')) {
-      value = '0' + value;
-    }
+    if (value.startsWith('.')) value = '0' + value;
     if (/^\d+(\.\d{0,2})?$/.test(value) || value === '') {
       setTarifas(prev => ({ ...prev, [name]: value }));
     }
   };
 
-  const validarTarifas = () => {
-    return tarifas.precio_por_m3 && tarifas.precio_por_kg && tarifas.precio_por_km;
-  };
+  const valido = tarifas.precio_por_m3 && tarifas.precio_por_kg && tarifas.precio_por_km;
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-xl font-bold text-blue-600 text-center">Configuración de Tarifas</h2>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="text-sm theme-text-secondary block mb-2">Precio por m³ (S/)</label>
-          <input
-            type="text"
-            name="precio_por_m3"
-            placeholder='ejemplo: 1.50'
-            value={tarifas.precio_por_m3}
-            onChange={handleInputChange}
-            className="w-full px-4 py-3 border rounded-lg theme-border theme-bg-primary theme-text-primary focus:ring-2 focus:ring-blue-500 transition-colors"
-          />
-        </div>
-        <div>
-          <label className="text-sm theme-text-secondary block mb-2">Precio por kg (S/)</label>
-          <input
-            type="text"
-            name="precio_por_kg"
-            placeholder='ejemplo: 0.40'
-            value={tarifas.precio_por_kg}
-            onChange={handleInputChange}
-            className="w-full px-4 py-3 border rounded-lg theme-border theme-bg-primary theme-text-primary focus:ring-2 focus:ring-blue-500 transition-colors"
-          />
-        </div>
-        <div>
-          <label className="text-sm theme-text-secondary block mb-2">Precio por km (S/)</label>
-          <input
-            type="text"
-            name="precio_por_km"
-            placeholder='ejemplo: 2.50'
-            value={tarifas.precio_por_km}
-            onChange={handleInputChange}
-            className="w-full px-4 py-3 border rounded-lg theme-border theme-bg-primary theme-text-primary focus:ring-2 focus:ring-blue-500 transition-colors"
-          />
-        </div>
-        <div>
-          <label className="text-sm theme-text-secondary block mb-2">Recargo por embalaje (S/)</label>
-          <input
-            type="text"
-            name="recargo_embalaje"
-            placeholder='ejemplo: 1.20'
-            value={tarifas.recargo_embalaje}
-            onChange={handleInputChange}
-            className="w-full px-4 py-3 border rounded-lg theme-border theme-bg-primary theme-text-primary focus:ring-2 focus:ring-blue-500 transition-colors"
-          />
-        </div>
-        <div>
-          <label className="text-sm theme-text-secondary block mb-2">Recargo por objeto frágil (S/)</label>
-          <input
-            type="text"
-            name="recargo_fragil"
-            placeholder='ejemplo: 0.80'
-            value={tarifas.recargo_fragil}
-            onChange={handleInputChange}
-            className="w-full px-4 py-3 border rounded-lg theme-border theme-bg-primary theme-text-primary focus:ring-2 focus:ring-blue-500 transition-colors"
-          />
-        </div>
+    <PasoRegistro
+      kicker="PASO 5 · TARIFAS"
+      titulo="Define tus tarifas"
+      descripcion="La cotización que ven los clientes se calcula hoy con tu precio por km y la distancia de la mudanza."
+      anterior={{ onClick: () => setCurrentStep(4) }}
+      siguiente={{ onClick: () => setCurrentStep(6), disabled: !valido, Icon: ArrowRight }}
+    >
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {CAMPOS.map(({ name, label, obligatorio }) => (
+          <div key={name}>
+            <label className="field-label" htmlFor={name}>
+              {label} {obligatorio && <span className="text-rose-500">*</span>}
+            </label>
+            <input id={name} name={name} type="text" inputMode="decimal" placeholder="0.00"
+              value={tarifas[name]} onChange={handleInputChange} className="field-input" />
+          </div>
+        ))}
       </div>
-
-      <div className="flex justify-between pt-6">
-        <button
-          type="button"
-          onClick={() => setCurrentStep(4)}
-          className="px-6 py-3 theme-bg-secondary theme-text-primary rounded-lg hover:opacity-80 font-semibold transition-opacity"
-        >
-          Volver
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setCurrentStep(6)}
-          disabled={!validarTarifas()}
-          className={`px-6 py-3 rounded-lg font-semibold text-white transition-colors ${
-            validarTarifas() ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
-          }`}
-        >
-          Siguiente
-        </button>
-      </div>
-    </div>
+    </PasoRegistro>
   );
 };
 

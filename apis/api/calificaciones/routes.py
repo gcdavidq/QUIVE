@@ -6,10 +6,12 @@ from api.calificaciones.services import (
 )
 from api.calificaciones.schemas import CrearCalificacionSchema
 from marshmallow import ValidationError
+from utils.auth import requiere_auth, id_actual, prohibido, rol_en_asignacion
 
 calificaciones_bp = Blueprint("calificaciones_bp", __name__)
 
 @calificaciones_bp.route("", methods=["POST"])
+@requiere_auth("cliente", "transportista")
 def post_calificacion():
     payload = request.get_json()
     schema = CrearCalificacionSchema()
@@ -18,17 +20,23 @@ def post_calificacion():
     except ValidationError as err:
         return jsonify({"errors": err.messages}), 400
 
-    result = create_calificacion(data)
+    if rol_en_asignacion(data["id_asignacion"]) is None:
+        return prohibido("Solo las partes del servicio pueden calificarlo")
+
+    # Quién califica es el usuario autenticado; a quién califica es su contraparte en la asignación.
+    result = create_calificacion(data, id_actual())
     if "error" in result:
         return jsonify({"msg": result["error"]}), 400
     return jsonify(result), 201
 
-@calificaciones_bp.route("/<int:id_usuario>", methods=["GET"])
-def get_calificaciones_usuario(id_usuario):
-    cals = list_calificaciones_de_usuario(id_usuario)
+@calificaciones_bp.route("/me", methods=["GET"])
+@requiere_auth("cliente", "transportista")
+def get_my_calificaciones():
+    cals = list_my_calificaciones(id_actual())
     return jsonify(cals), 200
 
-@calificaciones_bp.route("/me", methods=["GET"])
-def get_my_calificaciones():
-    cals = list_my_calificaciones()
+@calificaciones_bp.route("/<int:id_usuario>", methods=["GET"])
+@requiere_auth()
+def get_calificaciones_usuario(id_usuario):
+    cals = list_calificaciones_de_usuario(id_usuario)
     return jsonify(cals), 200

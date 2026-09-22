@@ -4,29 +4,42 @@ from api.auth.schemas import RegisterSchema, LoginSchema
 from marshmallow import ValidationError
 from utils.quickstart import subir_a_dropbox
 from utils.enviar_email import enviar_email
+from utils.auth import emitir_token, usuario_desde_request, emitir_comprobante_codigo, validar_comprobante_codigo
+import secrets
 
 auth_bp = Blueprint("auth_bp", __name__)
 
 @auth_bp.route("/enviar-codigo", methods=["POST"])
 def enviar_codigo():
-    data = request.get_json()
-    email = data.get("email")
-    codigo = data.get("codigo")
-
-    if not email or not codigo:
+    """
+    Genera el código en el servidor y lo envía por correo. Antes el código lo generaba
+    el navegador y viajaba en el body, así que la verificación era decorativa.
+    Devuelve un comprobante firmado (sin el código) que luego valida /verificar-codigo.
+    """
+    data = request.get_json() or {}
+    email = (data.get("email") or "").strip().lower()
+    if not email:
         return jsonify({"msg": "Faltan campos obligatorios"}), 400
 
+    codigo = f"{secrets.randbelow(1_000_000):06d}"
     mensaje = f"""
         <h3>Código de verificación</h3>
         <p>Tu código de verificación es: <strong>{codigo}</strong></p>
+        <p>Vence en 10 minutos.</p>
     """
 
-    exito = enviar_email(email, "Tu código de verificación QUIVE", mensaje)
-
-    if exito:
-        return jsonify({"msg": "Código enviado exitosamente"}), 200
-    else:
+    if not enviar_email(email, "Tu código de verificación QUIVE", mensaje):
         return jsonify({"msg": "Error al enviar el correo"}), 500
+    return jsonify({"msg": "Código enviado exitosamente", "comprobante": emitir_comprobante_codigo(email, codigo)}), 200
+
+
+@auth_bp.route("/verificar-codigo", methods=["POST"])
+def verificar_codigo():
+    data = request.get_json() or {}
+    email = (data.get("email") or "").strip().lower()
+    if validar_comprobante_codigo(data.get("comprobante"), email, str(data.get("codigo") or "")):
+        return jsonify({"verificado": True}), 200
+    return jsonify({"verificado": False, "msg": "Código incorrecto o vencido"}), 400
 
 
 @auth_bp.route("/verificar-usuario", methods=["POST"])
@@ -54,29 +67,38 @@ def register():
         elif request.form.get("foto_perfil_url"):
             payload["foto_perfil_url"] = request.form.get("foto_perfil_url")
         else:
-            payload["foto_perfil_url"] = 'https://dl.dropboxusercontent.com/scl/fi/jq4kjwhrqyjkmnwrpw3ks/blank-profile-picture-973460_1280.png?rlkey=ol5z7dhlc0nc6mvtff2r680sr&st=e69hru52'
-        print(payload)
+            # Sin foto: la interfaz muestra las iniciales del usuario.
+            payload["foto_perfil_url"] = ''
         data = schema.load(payload)
-        print(data)
 
     except ValidationError as err:
         return jsonify({"errors": err.messages}), 400
 
     # 👇 Registro o actualización
     if "id_usuario" in data:
+        # Editar un perfil exige sesión y solo puede editarse el perfil propio.
+        actual = usuario_desde_request()
+        if not actual:
+            return jsonify({"msg": "Sesión no válida o expirada"}), 401
+        if str(actual["id_usuario"]) != str(data["id_usuario"]):
+            return jsonify({"msg": "Solo puedes editar tu propio perfil"}), 403
+        # El rol no es editable desde el perfil: se conserva el real.
+        data["tipo_usuario"] = actual["tipo_usuario"]
         result = actualizar_usuario(data)
     else:
+        if not data.get("contrasena"):
+            return jsonify({"msg": "La contraseña es obligatoria"}), 400
         result = registrar_usuario(data)
 
     if "error" in result:
         return jsonify({"msg": result["error"]}), 400
+    result["token"] = emitir_token(result["usuario"]["id_usuario"])
     return jsonify(result), 201
 
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
     payload = request.get_json()
-    print(payload)
     schema = LoginSchema()
     try:
         data = schema.load(payload)
@@ -87,6 +109,7 @@ def login():
     if "error" in result:
         return jsonify({"msg": result["error"]}), 401
     result.pop("contrasena_hash", None)
+    result["token"] = emitir_token(result["usuario"]["id_usuario"])
     return jsonify(result), 200
 
 
@@ -114,6 +137,7 @@ def google_login():
 
         return jsonify({
             "status": "success",
+            "token": emitir_token(result["usuario"]["id_usuario"]),
             **result  # Incluye la información del usuario
         }), 200
 

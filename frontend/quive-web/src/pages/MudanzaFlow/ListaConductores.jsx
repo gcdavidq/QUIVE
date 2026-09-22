@@ -1,133 +1,77 @@
 import React, { useEffect, useState } from 'react';
-import { Star } from 'lucide-react';
-import WaitingScreen from './WaitingScreen';
-import API_URL from '../../api'; 
+import { Truck, ArrowRight, RefreshCw } from 'lucide-react';
+import API_URL, { apiFetch } from '../../api';
+import { conductorDesdeCandidato } from './conductor';
+import ConductorCard from './ConductorCard';
 
-const ListaConductores = ({ nextStep, seleccionarConductor, formData }) => {
+const ListaConductores = ({ seleccionarConductor, formData }) => {
   const [conductores, setConductores] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchConductores = async () => {
       try {
-        const response = await fetch(
-          `${API_URL}/transportistas/${formData.id_solicitud}/all`
-        );
-        const data = await response.json();
-
-        const nuevos = data.map((c) => ({
-          id_transportista: c.id_transportista,
-          nombre: c.nombre_completo,
-          foto: c.foto_perfil_url,
-          status: 'DISPONIBLE',
-          color: 'green',
-          precio: parseFloat(c.precio_estimado_total).toFixed(2),
-          rating: parseFloat(c.promedio_calificaciones).toFixed(1),
-          reviews: c.cantidad_calificaciones,
-          distancia: `${(formData.distancia / 1000).toFixed(1)} km`,
-          tiempo:
-            c.tiempo_estimado_horas * 60 > 60
-              ? `${Math.floor(c.tiempo_estimado_horas)} h ${(
-                  c.tiempo_estimado_horas * 60 % 60
-                ).toFixed(0)} min`
-              : `${(c.tiempo_estimado_horas * 60).toFixed(0)} min`,
-          vehiculo: `${c.nombre_vehiculo} - ${c.capacidad_volumen} m³`,
-        }));
-
-        setConductores(nuevos);
+        setLoading(true);
+        const response = await apiFetch(`${API_URL}/transportistas/${formData.id_solicitud}/all`);
+        const data = response.ok ? await response.json() : [];
+        setConductores((Array.isArray(data) ? data : []).map(conductorDesdeCandidato));
       } catch (e) {
         console.error('Error al obtener conductores:', e);
+        setConductores([]);
+      } finally {
+        setLoading(false);
       }
     };
     fetchConductores();
-  }, [formData]);
-
-  // Si ya seleccionó un conductor, mostrar pantalla de espera
-  if (formData.conductor) {
-    return <WaitingScreen />;
-  }
-
-  if (conductores.length === 0) return <p className="p-6">Cargando conductores...</p>;
+  }, [formData.id_solicitud]);
 
   return (
-   <div className="p-6">
-    <div className="theme-card rounded-lg p-6">
-      <h3 className="text-lg font-bold text-blue-600 mb-6 text-center">
-        LISTA DE CONDUCTORES
-      </h3>
-      <div className="space-y-4">
-        {conductores.map((c) => (
-          <div
-            key={c.id_transportista}
-            className="theme-card flex items-center justify-between hover:shadow-md transition-shadow p-4"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-tr from-blue-100 to-blue-200 rounded-lg flex items-center justify-center">
-                <img
-                  src={c.foto}
-                  alt="Avatar"
-                  className="w-16 h-16 object-cover rounded-full"
-                />
-              </div>
-              <div>
-                <h4 className="font-bold theme-text-primary">{c.nombre}</h4>
-                <p className="text-sm theme-text-secondary">{c.vehiculo}</p>
-                <div className="flex items-center gap-2">
-                  <div className="flex">
-                    {[1, 2, 3, 4, 5].map((star) => {
-                      const fillPercentage = Math.min(Math.max(c.rating - star + 1, 0), 1) * 100;
-                      return (
-                        <div key={star} className="relative w-4 h-4">
-                          <Star className="w-4 h-4 text-gray-300" />
-                          <div
-                            className="absolute top-0 left-0 h-full overflow-hidden"
-                            style={{ width: `${fillPercentage}%` }}
-                          >
-                            <Star className="w-4 h-4 text-yellow-400" />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <span className="text-sm theme-text-secondary">
-                    {c.rating} ({c.reviews} reseñas)
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-xl font-bold mb-2 theme-text-primary">S/ {c.precio}</div>
-              <div className="text-sm theme-text-secondary mb-2">
-                {c.distancia} - {c.tiempo}
-              </div>
-              <div
-                className={`px-2 py-1 rounded text-xs text-white mb-3 ${
-                  c.color === 'green' ? 'bg-green-500' : 'bg-red-500'
-                }`}
-              >
-                {c.status}
-              </div>
-              <button
-                onClick={() => {
-                  if (c.status === 'DISPONIBLE') {
-                    seleccionarConductor(c);
-                  } else {
-                    alert('Este conductor no está disponible en este momento');
-                  }
-                }}
-                disabled={c.status !== 'DISPONIBLE'}
-                className={`btn-secondary px-6 py-2 rounded font-medium ${
-                  c.status !== 'DISPONIBLE' && 'opacity-60 cursor-not-allowed'
-                }`}
-              >
-                {c.status === 'DISPONIBLE' ? 'SELECCIONAR' : 'NO DISPONIBLE'}
-              </button>
-            </div>
+    <div className="max-w-4xl mx-auto space-y-6">
+      <div className="surface-card p-6 sm:p-8 rounded-2xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[var(--color-border)] mb-6">
+          <div>
+            <span className="section-kicker">PASO 4 DE 5 · TRANSPORTISTAS</span>
+            <h2 className="font-display text-2xl font-extrabold text-[#16365f] dark:text-white mt-1">Elige tu transportista</h2>
+            <p className="text-xs text-[#8da3bd] mt-1">
+              Ordenados por puntaje. La tarifa se calcula con el precio por km de cada transportista y la distancia de tu mudanza.
+            </p>
           </div>
-        ))}
+          {!loading && (
+            <span className="live-pill self-start sm:self-auto">
+              {conductores.length} {conductores.length === 1 ? 'candidato' : 'candidatos'}
+            </span>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="p-12 text-center">
+            <RefreshCw className="animate-spin text-[#4d93f5] mx-auto mb-3" size={28} />
+            <p className="text-xs font-semibold theme-text-secondary">Cargando transportistas...</p>
+          </div>
+        ) : conductores.length === 0 ? (
+          <div className="p-10 text-center rounded-xl border border-[var(--color-border)]">
+            <Truck className="w-10 h-10 text-[#8da3bd] mx-auto mb-2 opacity-50" />
+            <p className="text-sm font-bold text-[#16365f] dark:text-white">No hay transportistas disponibles para esta solicitud</p>
+            <p className="text-xs text-[#8da3bd] mt-1">Tu solicitud queda guardada; puedes volver a intentarlo más tarde.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {conductores.map((c) => (
+              <ConductorCard
+                key={c.id_transportista}
+                conductor={c}
+                accion={
+                  <button onClick={() => seleccionarConductor(c)} className="primary-button text-xs !py-2 !px-4">
+                    <span>Seleccionar</span>
+                    <ArrowRight size={13} />
+                  </button>
+                }
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
-  </div>
-
   );
 };
 

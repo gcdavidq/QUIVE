@@ -1,125 +1,48 @@
-import React, { useState } from "react";
+import React from "react";
+import { FileUp, FileCheck } from 'lucide-react';
 
-// Ícono de ojo minimalista (SVG inline)
-const EyeIcon = ({ size = 20, className = "" }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-    <circle cx="12" cy="12" r="3" />
-  </svg>
-);
+const DOCUMENTOS = [
+  { campo: "licencia_conducir", titulo: "Licencia de conducir" },
+  { campo: "tarjeta_propiedad", titulo: "Tarjeta de propiedad" },
+  { campo: "certificado_itv", titulo: "Certificado de inspección técnica (ITV)" },
+];
 
-const SubidaDocumentos = ({ documentos, setDocumentos }) => {
-  // Estado para mostrar/ocultar los campos de subida
-  const [showFields, setShowFields] = useState(false);
-
-  const handleFileChange = (e, tipo) => {
-    const file = e.target.files[0];
-    if (file) {
-      setDocumentos({ ...documentos, [tipo]: file });
-    }
-  };
-
-  return (
-    <div className="documentos-container">
-      {/* Header con título y botón de ojo */}
-      <div className="documentos-header">
-        <div className="documentos-title">Documentos Requeridos</div>
-        <button
-          type="button"
-          className="documentos-view-button"
-          onClick={() => setShowFields((prev) => !prev)}
+// Subida de los tres documentos del TRANSPORTISTA (PDF).
+const SubidaDocumentos = ({ documentos, setDocumentos }) => (
+  <div className="space-y-3">
+    <span className="field-label">Documentos requeridos (PDF)</span>
+    {DOCUMENTOS.map(({ campo, titulo }) => {
+      const archivo = documentos[campo];
+      return (
+        <label
+          key={campo}
+          className="flex items-center justify-between gap-3 p-3.5 rounded-xl border border-[var(--color-border)] bg-[#fbfdff] dark:bg-[#112136] hover:border-[#4d93f5] transition-colors cursor-pointer"
         >
-          <EyeIcon className="documentos-eye-icon" />
-          Ver Documentos
-        </button>
-      </div>
-
-      {/* Campos de subida, se renderizan sólo si showFields === true */}
-      {showFields && (
-        <div className="documentos-fields">
-          {/* Licencia de Conducir */}
-          <div className="documentos-field">
-            <label className="documentos-label">Licencia de Conducir (PDF)</label>
-            <div className="documentos-file-wrapper">
-              <div className="documentos-fake-input">
-                <EyeIcon size={16} className="documentos-file-icon" />
-                Seleccionar archivo PDF
-                <input
-                  type="file"
-                  accept=".pdf"
-                  className="documentos-real-input"
-                  onChange={(e) => handleFileChange(e, "licencia_conducir")}
-                />
-              </div>
+          <div className="flex items-center gap-3 min-w-0">
+            <div className={`stat-icon ${archivo ? 'stat-mint' : 'stat-blue'} !h-9 !w-9 flex-shrink-0`}>
+              {archivo ? <FileCheck size={16} /> : <FileUp size={16} />}
             </div>
-            {documentos.licencia_conducir && (
-              <div className="documentos-file-info">
-                {documentos.licencia_conducir.name} (
-                {(documentos.licencia_conducir.size / 1024).toFixed(2)} KB)
-              </div>
-            )}
-          </div>
-
-          {/* Tarjeta de Propiedad */}
-          <div className="documentos-field">
-            <label className="documentos-label">Tarjeta de Propiedad (PDF)</label>
-            <div className="documentos-file-wrapper">
-              <div className="documentos-fake-input">
-                <EyeIcon size={16} className="documentos-file-icon" />
-                Seleccionar archivo PDF
-                <input
-                  type="file"
-                  accept=".pdf"
-                  className="documentos-real-input"
-                  onChange={(e) => handleFileChange(e, "tarjeta_propiedad")}
-                />
-              </div>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-[#16365f] dark:text-white">{titulo}</p>
+              <p className="text-[11px] text-[#8da3bd] truncate">
+                {archivo ? `${archivo.name} · ${(archivo.size / 1024).toFixed(0)} KB` : 'Ningún archivo seleccionado'}
+              </p>
             </div>
-            {documentos.tarjeta_propiedad && (
-              <div className="documentos-file-info">
-                {documentos.tarjeta_propiedad.name} (
-                {(documentos.tarjeta_propiedad.size / 1024).toFixed(2)} KB)
-              </div>
-            )}
           </div>
-
-          {/* Certificado de ITV */}
-          <div className="documentos-field">
-            <label className="documentos-label">Certificado de ITV (PDF)</label>
-            <div className="documentos-file-wrapper">
-              <div className="documentos-fake-input">
-                <EyeIcon size={16} className="documentos-file-icon" />
-                Seleccionar archivo PDF
-                <input
-                  type="file"
-                  accept=".pdf"
-                  className="documentos-real-input"
-                  onChange={(e) => handleFileChange(e, "certificado_itv")}
-                />
-              </div>
-            </div>
-            {documentos.certificado_itv && (
-              <div className="documentos-file-info">
-                {documentos.certificado_itv.name} (
-                {(documentos.certificado_itv.size / 1024).toFixed(2)} KB)
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+          <span className="text-xs font-bold text-[#4d93f5] flex-shrink-0">{archivo ? 'Cambiar' : 'Seleccionar'}</span>
+          <input
+            type="file"
+            accept=".pdf"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files[0];
+              if (file) setDocumentos({ ...documentos, [campo]: file });
+            }}
+          />
+        </label>
+      );
+    })}
+  </div>
+);
 
 export default SubidaDocumentos;

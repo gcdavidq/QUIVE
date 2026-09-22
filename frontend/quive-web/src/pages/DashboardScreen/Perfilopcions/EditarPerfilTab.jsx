@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, Save } from 'lucide-react';
 import SubirImagen from '../../utils/SubirImagen';
 import UbicacionPeru from '../../Registerutils/address';
 import { useNavigate } from 'react-router-dom';
 import { parseUbicacion } from '../../utils/ubicacion';
-import API_URL from '../../../api';
+import API_URL, { apiFetch } from '../../../api';
 
-const EditarPerfilScreen = ({ userData, setUserData}) => {
+const EditarPerfilScreen = ({ userData, setUserData }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     id_usuario: userData.id_usuario || '',
@@ -14,36 +14,37 @@ const EditarPerfilScreen = ({ userData, setUserData}) => {
     email: userData.email || '',
     telefono: userData.telefono || '',
     dni: userData.dni || '',
-    contrasena: userData.contrasena || '',
+    contrasena: '',
     tipo_usuario: userData.tipo_usuario,
-    ubicacion: userData.Ubicacion || '',
+    ubicacion: userData.ubicacion || '',
     fotoPerfil: userData.foto_perfil_url,
   });
   const [direccion, setUbicacion] = useState(() => {
-    if (userData.Ubicacion) {
-      return parseUbicacion(userData.Ubicacion);
+    if (userData.ubicacion && userData.ubicacion.includes(';')) {
+      return parseUbicacion(userData.ubicacion);
     }
-    return {departamento: "",
-    provincia: "",
-    distrito: "",
-    tipoVia: "",
-    nombreVia: "",
-    numero: ""};
+    return {
+      departamento: "",
+      provincia: "",
+      distrito: "",
+      tipoVia: "",
+      nombreVia: "",
+      numero: ""
+    };
   });
-
-
 
   const [showPassword, setShowPassword] = useState(false);
   const [fotoPerfil, setFotoPerfil] = useState(null);
   const [preview, setPreview] = useState(userData.foto_perfil_url);
-  console.log(preview)
+  const [guardando, setGuardando] = useState(false);
 
   const handleInputChange = (e) => {
-    setFormData({...formData, [e.target.name]: e.target.value});
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setGuardando(true);
 
     const formPayload = new FormData();
     formPayload.append("id_usuario", formData.id_usuario);
@@ -54,17 +55,17 @@ const EditarPerfilScreen = ({ userData, setUserData}) => {
     formPayload.append("tipo_usuario", formData.tipo_usuario);
     formPayload.append("contrasena", formData.contrasena);
     formPayload.append("foto_perfil_url", fotoPerfil ?? formData.fotoPerfil);
-    
 
-    // ubicación nueva si se modificó
-    if (Object.keys(direccion).length > 0) {
+    if (direccion.lat && direccion.lng) {
       const { departamento, provincia, distrito, tipoVia, nombreVia, numero, lat, lng } = direccion;
       const ubicacion = `${tipoVia} ${nombreVia} ${numero}, ${distrito}, ${provincia}, ${departamento}, Peru; ${lat}, ${lng}`;
       formPayload.append("ubicacion", ubicacion);
+    } else {
+      formPayload.append("ubicacion", formData.ubicacion);
     }
 
     try {
-      const response = await fetch(`${API_URL}/auth/register`, {
+      const response = await apiFetch(`${API_URL}/auth/register`, {
         method: "POST",
         credentials: "include",
         body: formPayload,
@@ -74,6 +75,7 @@ const EditarPerfilScreen = ({ userData, setUserData}) => {
 
       if (!response.ok) {
         alert(data.msg || "Error al actualizar perfil.");
+        setGuardando(false);
         return;
       }
 
@@ -81,118 +83,168 @@ const EditarPerfilScreen = ({ userData, setUserData}) => {
       setUserData(prev => ({
         ...prev,
         ...usuario
-      }));// actualiza el estado global
+      }));
       navigate('..');
 
     } catch (error) {
       console.error("Error al conectar con API:", error);
       alert("Error de red.");
+    } finally {
+      setGuardando(false);
     }
   };
 
   return (
-    <div className="min-h-screen theme-bg-primary">
-      <header className="theme-card p-6 flex items-center shadow-sm">
-        <button
-          onClick={() => navigate('..')}
-          className="mr-4 p-2 theme-text-secondary hover:text-blue-600 transition-colors"
-        >
-          <ArrowLeft size={24} />
-        </button>
-        <div className="text-2xl font-bold theme-title-primary">Editar Perfil</div>
-      </header>
+    <div className="space-y-6 max-w-2xl mx-auto">
+      {/* Header */}
+      <div className="surface-card p-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate('..')}
+            className="p-2.5 rounded-xl border border-[var(--color-border)] hover:border-[#4d93f5] text-[#345273] dark:text-white transition-all"
+            aria-label="Regresar a perfil"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <div>
+            <span className="section-kicker">ACTUALIZACIÓN DE CUENTA</span>
+            <h1 className="font-display text-2xl font-bold text-[#16365f] dark:text-white mt-0.5">
+              Editar Datos de Perfil
+            </h1>
+          </div>
+        </div>
+      </div>
 
-      <div className="flex items-center justify-center py-12">
-        <div className="theme-card rounded-2xl shadow-xl p-8 w-full max-w-md">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex justify-center mb-6">
-              <SubirImagen
-                defaultPreview={preview}
-                onFotoSeleccionada={(file) => {
-                  setFotoPerfil(file);
-                  setPreview(URL.createObjectURL(file));
-                }}
-                id_imagen="fotoPerfil"
-                imgClassName="w-32 h-32 rounded-full object-cover border-4 border-blue-200 shadow-md"
-              />
-            </div>
+      <div className="surface-card p-6 sm:p-8 rounded-2xl">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Avatar Upload */}
+          <div className="flex flex-col items-center justify-center mb-6">
+            <SubirImagen
+              defaultPreview={preview}
+              onFotoSeleccionada={(file) => {
+                setFotoPerfil(file);
+                setPreview(URL.createObjectURL(file));
+              }}
+              id_imagen="fotoPerfil"
+              imgClassName="w-28 h-28 rounded-2xl object-cover border-2 border-[#4d93f5]/40 shadow-lg"
+            />
+            <span className="text-[11px] text-[#8da3bd] mt-2 font-medium">Haz clic en la imagen para cambiar tu foto</span>
+          </div>
 
+          <div>
+            <label className="text-xs font-bold text-[#16365f] dark:text-white uppercase tracking-wider block mb-1.5">
+              Nombre Completo
+            </label>
             <input
               type="text"
               name="nombre"
-              placeholder="Nombre y Apellidos"
+              placeholder="Nombre y apellidos"
               value={formData.nombre}
               onChange={handleInputChange}
-              className="form-input"
+              required
+              className="w-full text-xs font-medium py-3 px-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] theme-text-primary focus:outline-none focus:border-[#4d93f5] transition-colors"
             />
+          </div>
 
-            <input
-              type="email"
-              name="email"
-              placeholder="Correo Electrónico"
-              value={formData.email}
-              onChange={handleInputChange}
-              className="form-input"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-bold text-[#16365f] dark:text-white uppercase tracking-wider block mb-1.5">
+                Correo Electrónico
+              </label>
+              <input
+                type="email"
+                name="email"
+                placeholder="usuario@ejemplo.com"
+                value={formData.email}
+                onChange={handleInputChange}
+                required
+                className="w-full text-xs font-medium py-3 px-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] theme-text-primary focus:outline-none focus:border-[#4d93f5] transition-colors"
+              />
+            </div>
 
-            <input
-              type="tel"
-              name="telefono"
-              placeholder="Teléfono"
-              maxLength={9}
-              value={formData.telefono}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (/^\d*$/.test(value)) handleInputChange(e);
-              }}
-              className="form-input"
-            />
+            <div>
+              <label className="text-xs font-bold text-[#16365f] dark:text-white uppercase tracking-wider block mb-1.5">
+                Teléfono de Contacto
+              </label>
+              <input
+                type="tel"
+                name="telefono"
+                placeholder="9 dígitos"
+                maxLength={9}
+                value={formData.telefono}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (/^\d*$/.test(value)) handleInputChange(e);
+                }}
+                required
+                className="w-full text-xs font-medium py-3 px-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] theme-text-primary focus:outline-none focus:border-[#4d93f5] transition-colors"
+              />
+            </div>
+          </div>
 
+          <div>
+            <label className="text-xs font-bold text-[#16365f] dark:text-white uppercase tracking-wider block mb-1.5">
+              DNI / Documento de Identidad
+            </label>
             <input
               type="text"
               name="dni"
-              placeholder="DNI"
+              placeholder="8 dígitos"
               maxLength={8}
               value={formData.dni}
               onChange={(e) => {
                 const value = e.target.value;
                 if (/^\d*$/.test(value)) handleInputChange(e);
               }}
-              className="form-input"
+              required
+              className="w-full text-xs font-medium py-3 px-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] theme-text-primary focus:outline-none focus:border-[#4d93f5] transition-colors"
             />
+          </div>
 
-            <UbicacionPeru direccion={direccion} setUbicacion={setUbicacion} />
+          <div className="pt-2">
+            <span className="text-xs font-bold text-[#16365f] dark:text-white uppercase tracking-wider block mb-2">
+              Dirección Principal Registrada
+            </span>
+            <div className="p-4 rounded-xl border border-[var(--color-border)] bg-[#fbfdff] dark:bg-[#112136]">
+              <UbicacionPeru direccion={direccion} setUbicacion={setUbicacion} />
+            </div>
+          </div>
 
+          <div>
+            <label className="text-xs font-bold text-[#16365f] dark:text-white uppercase tracking-wider block mb-1.5">
+              Contraseña
+            </label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
                 name="contrasena"
-                placeholder="Nueva Contraseña (opcional)"
+                placeholder="Ingresa nueva contraseña para cambiarla"
                 value={formData.contrasena}
                 onChange={handleInputChange}
-                className="form-input pr-10"
+                className="w-full text-xs font-medium py-3 pl-4 pr-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] theme-text-primary focus:outline-none focus:border-[#4d93f5] transition-colors"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 theme-text-secondary"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#8da3bd] hover:text-[#4d93f5]"
               >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+          </div>
 
-            <button
-              type="submit"
-              className="btn-primary w-full py-3 rounded-lg font-semibold"
-            >
-              GUARDAR CAMBIOS
-            </button>
-          </form>
-        </div>
+          <button
+            type="submit"
+            disabled={guardando}
+            className="primary-button w-full !py-3.5 text-xs font-bold shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 mt-6"
+          >
+            <Save size={16} />
+            <span>{guardando ? 'Guardando cambios...' : 'Guardar Actualización de Perfil'}</span>
+          </button>
+        </form>
       </div>
     </div>
   );
-
 };
 
 export default EditarPerfilScreen;

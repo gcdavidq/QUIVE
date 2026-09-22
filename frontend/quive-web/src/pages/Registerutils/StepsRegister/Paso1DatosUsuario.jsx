@@ -1,18 +1,25 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
-import { generateCode, sendEmailFake } from '../verificationUtils';
-import API_URL from '../../../api';
+import { Eye, EyeOff, User, Truck, ArrowRight } from 'lucide-react';
+import API_URL, { apiFetch } from '../../../api';
+import PasoRegistro from './PasoRegistro';
 
-const Paso1DatosUsuario = ({ formData, setFormData, setCurrentStep, setCodigoVerificacion }) => {
+const ROLES = [
+  { valor: 'cliente', titulo: 'Cliente', texto: 'Quiero solicitar mudanzas', Icon: User },
+  { valor: 'transportista', titulo: 'Transportista', texto: 'Quiero realizar traslados', Icon: Truck },
+];
+
+const Paso1DatosUsuario = ({ formData, setFormData, setCurrentStep }) => {
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const [verificando, setVerificando] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    setErrors(prev => ({ ...prev, [name]: '' }));
+    setErrors(prev => ({ ...prev, [name]: '', general: '' }));
   };
+
+  const soloDigitos = (e) => { if (/^\d*$/.test(e.target.value)) handleInputChange(e); };
 
   const validateStep = () => {
     const newErrors = {};
@@ -21,7 +28,7 @@ const Paso1DatosUsuario = ({ formData, setFormData, setCurrentStep, setCodigoVer
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email inválido';
     if (!formData.telefono.trim()) newErrors.telefono = 'El teléfono es requerido';
     else if (!/^9\d{8}$/.test(formData.telefono)) newErrors.telefono = 'Debe comenzar con 9 y tener 9 dígitos';
-    if (!formData.dni.trim()) newErrors.dni = 'El DNI es requerido';
+    if (!/^\d{8}$/.test(formData.dni)) newErrors.dni = 'El DNI debe tener 8 dígitos';
     if (!formData.password) newErrors.password = 'La contraseña es requerida';
     else if (formData.password.length < 6) newErrors.password = 'Debe tener al menos 6 caracteres';
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Las contraseñas no coinciden';
@@ -33,157 +40,93 @@ const Paso1DatosUsuario = ({ formData, setFormData, setCurrentStep, setCodigoVer
   const verificarYContinuar = async () => {
     if (!validateStep()) return;
     try {
-      const res = await fetch(`${API_URL}/auth/verificar-usuario`, {
+      setVerificando(true);
+      const res = await apiFetch(`${API_URL}/auth/verificar-usuario`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: formData.email, telefono: formData.telefono, dni: formData.dni })
       });
       const result = await res.json();
-      if (result.existe) return alert("Ya existe un usuario con este email, DNI o teléfono.");
-
-      const codigo = generateCode();
-      setCodigoVerificacion(codigo);
-      await sendEmailFake(formData.email, codigo);
+      if (result.existe) {
+        setErrors({ general: 'Ya existe un usuario con este email, DNI o teléfono.' });
+        return;
+      }
+      // El código de verificación lo genera y envía el servidor en el paso 2.
       setCurrentStep(2);
     } catch (err) {
-      alert("Error verificando usuario. Intenta nuevamente.");
+      setErrors({ general: 'No se pudo verificar tus datos. Intenta nuevamente.' });
+    } finally {
+      setVerificando(false);
     }
   };
 
-  return (
-    <form className="space-y-4">
-      <div className="flex theme-bg-secondary rounded-full p-1 mb-4">
-        <button
-          type="button"
-          onClick={() => setFormData(prev => ({ ...prev, tipoUsuario: 'cliente' }))}
-          className={`flex-1 py-2 rounded-full transition-colors ${
-            formData.tipoUsuario === 'cliente' ? 'bg-blue-600 text-white' : 'text-blue-500'
-          }`}
-        >
-          Cliente
-        </button>
-        <button
-          type="button"
-          onClick={() => setFormData(prev => ({ ...prev, tipoUsuario: 'transportista' }))}
-          className={`flex-1 py-2 rounded-full transition-colors ${
-            formData.tipoUsuario === 'transportista' ? 'bg-blue-600 text-white' : 'text-blue-500'
-          }`}
-        >
-          Transportista
-        </button>
-      </div>
-      
-      <h2 className="text-xl font-bold text-blue-600">Datos del Usuario</h2>
-      
+  const campo = (name, label, props = {}) => (
+    <div>
+      <label className="field-label" htmlFor={name}>{label}</label>
       <input
-        type="text"
-        name="nombre"
-        placeholder="Nombre completo"
-        value={formData.nombre}
+        id={name}
+        name={name}
+        value={formData[name]}
         onChange={handleInputChange}
-        className={`w-full px-4 py-3 border rounded-lg theme-bg-primary theme-text-primary transition-colors ${
-          errors.nombre ? 'border-red-500' : 'theme-border'
-        }`}
+        className={`field-input ${errors[name] ? 'field-input-error' : ''}`}
+        {...props}
       />
-      {errors.nombre && <p className="text-red-500 text-sm">{errors.nombre}</p>}
+      {errors[name] && <p className="field-error">{errors[name]}</p>}
+    </div>
+  );
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <input
-            type="email"
-            name="email"
-            placeholder="Correo Electrónico"
-            value={formData.email}
-            onChange={handleInputChange}
-            className={`w-full px-4 py-3 border rounded-lg theme-bg-primary theme-text-primary transition-colors ${
-              errors.email ? 'border-red-500' : 'theme-border'
-            }`}
-          />
-          {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
+  return (
+    <PasoRegistro
+      kicker="PASO 1 · TUS DATOS"
+      titulo="Crea tu cuenta"
+      error={errors.general}
+      siguiente={{ texto: verificando ? 'Verificando...' : 'Continuar', onClick: verificarYContinuar, disabled: verificando, Icon: ArrowRight }}
+    >
+      <div>
+        <span className="field-label">¿Cómo usarás QUIVE?</span>
+        <div className="grid grid-cols-2 gap-3">
+          {ROLES.map(({ valor, titulo, texto, Icon }) => {
+            const activo = formData.tipoUsuario === valor;
+            return (
+              <button
+                type="button"
+                key={valor}
+                onClick={() => setFormData(prev => ({ ...prev, tipoUsuario: valor }))}
+                className={`p-3.5 rounded-xl border text-left transition-all ${
+                  activo ? 'border-[#4d93f5] bg-blue-50/60 dark:bg-blue-950/30' : 'border-[var(--color-border)] hover:border-[#4d93f5]/50'
+                }`}
+              >
+                <div className={`stat-icon ${activo ? 'stat-blue' : 'stat-lilac'} !h-8 !w-8 mb-2`}><Icon size={16} /></div>
+                <p className="text-xs font-bold text-[#16365f] dark:text-white">{titulo}</p>
+                <p className="text-[11px] text-[#8da3bd]">{texto}</p>
+              </button>
+            );
+          })}
         </div>
-        <div>
-          <input
-            type="tel"
-            name="telefono"
-            placeholder="Teléfono"
-            value={formData.telefono}
-            maxLength={9}
-            onChange={(e) => {
-              if (/^\d{0,9}$/.test(e.target.value)) handleInputChange(e);
-            }}
-            className={`w-full px-4 py-3 border rounded-lg theme-bg-primary theme-text-primary transition-colors ${
-              errors.telefono ? 'border-red-500' : 'theme-border'
-            }`}
-          />
-          {errors.telefono && <p className="text-red-500 text-sm">{errors.telefono}</p>}
+      </div>
+
+      {campo('nombre', 'Nombre completo', { type: 'text', autoComplete: 'name' })}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {campo('email', 'Correo electrónico', { type: 'email', autoComplete: 'email' })}
+        {campo('telefono', 'Teléfono', { type: 'tel', maxLength: 9, onChange: soloDigitos, autoComplete: 'tel' })}
+      </div>
+      {campo('dni', 'DNI', { type: 'text', maxLength: 8, onChange: soloDigitos, inputMode: 'numeric' })}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="relative">
+          {campo('password', 'Contraseña', { type: showPassword ? 'text' : 'password', autoComplete: 'new-password' })}
+          <button
+            type="button"
+            onClick={() => setShowPassword(prev => !prev)}
+            className="absolute right-3 top-[34px] text-[#8da3bd] hover:text-[#4d93f5]"
+            aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
         </div>
+        {campo('confirmPassword', 'Confirmar contraseña', { type: showPassword ? 'text' : 'password', autoComplete: 'new-password' })}
       </div>
-
-      <input
-        type="text"
-        name="dni"
-        placeholder="DNI"
-        value={formData.dni}
-        maxLength={8}
-        onChange={(e) => { if (/^\d*$/.test(e.target.value)) handleInputChange(e); }}
-        className={`w-full px-4 py-3 border rounded-lg theme-bg-primary theme-text-primary transition-colors ${
-          errors.dni ? 'border-red-500' : 'theme-border'
-        }`}
-      />
-      {errors.dni && <p className="text-red-500 text-sm">{errors.dni}</p>}
-
-      <div className="relative">
-        <input
-          type={showPassword ? 'text' : 'password'}
-          name="password"
-          placeholder="Contraseña"
-          value={formData.password}
-          onChange={handleInputChange}
-          className={`w-full px-4 py-3 border rounded-lg theme-bg-primary theme-text-primary transition-colors ${
-            errors.password ? 'border-red-500' : 'theme-border'
-          }`}
-        />
-        <button 
-          type="button" 
-          onClick={() => setShowPassword(prev => !prev)} 
-          className="absolute right-3 top-3 theme-text-secondary hover:theme-text-primary transition-colors"
-        >
-          {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-        </button>
-        {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
-      </div>
-
-      <div className="relative">
-        <input
-          type={showConfirmPassword ? 'text' : 'password'}
-          name="confirmPassword"
-          placeholder="Confirmar Contraseña"
-          value={formData.confirmPassword}
-          onChange={handleInputChange}
-          className={`w-full px-4 py-3 border rounded-lg theme-bg-primary theme-text-primary transition-colors ${
-            errors.confirmPassword ? 'border-red-500' : 'theme-border'
-          }`}
-        />
-        <button 
-          type="button" 
-          onClick={() => setShowConfirmPassword(prev => !prev)} 
-          className="absolute right-3 top-3 theme-text-secondary hover:theme-text-primary transition-colors"
-        >
-          {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-        </button>
-        {errors.confirmPassword && <p className="text-red-500 text-sm">{errors.confirmPassword}</p>}
-      </div>
-
-      <div className="flex justify-center pt-4">
-        <button 
-          type="button" 
-          onClick={verificarYContinuar} 
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-colors"
-        >
-          Siguiente
-        </button>
-      </div>
-    </form>
+    </PasoRegistro>
   );
 };
 
